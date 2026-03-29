@@ -1,0 +1,10 @@
+build/
+.codex
+
+.vscode/
+.idea/
+
+*.o
+*.obj
+*.exe
+*.out
