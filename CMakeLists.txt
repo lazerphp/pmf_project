@@ -12,8 +12,11 @@ include_directories(include)
 # Собираем список исходных файлов
 set(SOURCES
     main.cpp
+    src/CameraController.cpp
     src/Particle.cpp
+    src/Corridor.cpp
     src/Simulation.cpp
+    src/Zone.cpp
     # Vector2.cpp не нужен, если реализация в заголовке, 
     # но если вынесли туда - добавьте сюда
 )

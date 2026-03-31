@@ -14,6 +14,7 @@ public:
 
     Particle(float x, float y, float vx, float vy);
 
+    void clearForces();
     void update(float dt);
     void applyForce(const Vector2 &force);
 };

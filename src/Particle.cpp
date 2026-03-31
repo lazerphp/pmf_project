@@ -23,11 +23,16 @@ Particle::Particle(float x, float y, float vx, float vy)
     shape.setPosition(position.x, position.y);
 }
 
+void Particle::clearForces()
+{
+    acceleration = Vector2(0, 0);
+}
+
 void Particle::update(float dt)
 {
     velocity += acceleration * dt;
     position += velocity * dt;
-    acceleration = Vector2(0, 0);
+    clearForces();
     shape.setPosition(position.x, position.y);
 }
 
