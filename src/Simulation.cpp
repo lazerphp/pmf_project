@@ -1,29 +1,53 @@
 #include "Simulation.h"
 
-// Настройки симуляции
+namespace Config
+{
+// Window and rendering
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
+const sf::Color BACKGROUND_COLOR(12, 14, 18);
+
+// Particles and integration
 const int PARTICLE_COUNT = 50;
-const float V_MAX = 200.0f;
-const float DT = 0.01f;
+const int PHYSICS_STEPS_PER_FRAME = 5;
+const float DT = 0.001f;
 const float PARTICLE_RADIUS = 5.0f;
-const float MORSE_DEPTH = 1400.0f;
-const float MORSE_WIDTH = 0.09f;
-const float MORSE_EQUILIBRIUM_DISTANCE = 18.0f;
-const float PAIR_FORCE_CUTOFF = 90.0f;
-const float MIN_PAIR_DISTANCE = 2.0f;
-const float FIELD_DRIVE_STRENGTH = 18.0f;
-const float FIELD_CENTERING_STRENGTH = 0.12f;
-const float FIELD_TARGET_STRENGTH = 0.035f;
+const float V_MAX = 200.0f;
+
+// Lennard-Jones interaction
+const float LJ_EPSILON = 900.0f;
+const float LJ_SIGMA = (2.0f * PARTICLE_RADIUS) / 1.122462048f;
+const float LJ_CUTOFF = 2.5f * LJ_SIGMA;
+const float MIN_PAIR_DISTANCE = 0.6f * LJ_SIGMA;
+
+// Spawn constraints
+const float SPAWN_MIN_DISTANCE = 2.0f * PARTICLE_RADIUS;
+const int SPAWN_MAX_ATTEMPTS = 200;
+
+// External field
+const float FIELD_START_DRIVE_X = 18.0f;
+const float FIELD_TOP_DRIVE_X = 18.0f;
+const float FIELD_TOP_CENTERING_Y = 0.12f;
+const float FIELD_RIGHT_DRIVE_Y = 18.0f;
+const float FIELD_RIGHT_CENTERING_X = 0.12f;
+const float FIELD_BOTTOM_DRIVE_Y = 18.0f;
+const float FIELD_BOTTOM_CENTERING_X = 0.12f;
+const float FIELD_TARGET_ATTRACTION_X = 0.035f;
+const float FIELD_TARGET_ATTRACTION_Y = 0.035f;
+const float FIELD_GLOBAL_TARGET_ATTRACTION = 0.035f;
 const float FIELD_MAX_FORCE = 160.0f;
+
+// Camera
 const float CAMERA_ZOOM_STEP = 1.1f;
 const float CAMERA_MIN_ZOOM = 0.35f;
 const float CAMERA_MAX_ZOOM = 4.0f;
-const sf::Color BACKGROUND_COLOR(12, 14, 18);
+
+// Visuals
 const sf::Color WALL_COLOR(255, 255, 255);
 const float WALL_THICKNESS = 4.0f;
 const sf::Color SPAWN_COLOR(150, 210, 40, 150);
 const sf::Color TARGET_COLOR(220, 50, 50, 150);
+} // namespace Config
 
 namespace
 {
@@ -64,7 +88,7 @@ Vector2 limitForce(const Vector2 &force, float maxMagnitude)
 
 Vector2 getPotentialForce(float x, float y)
 {
-    const float upperLaneCenterY = 128.0f;
+    const float upperLaneCenterY = 130.0f;
     const float rightLaneCenterX = 530.0f;
     const float lowerLaneCenterX = 330.0f;
     const Vector2 targetCenter(330.0f, 495.0f);
@@ -73,36 +97,36 @@ Vector2 getPotentialForce(float x, float y)
 
     if (x < 180.0f)
     {
-        force.x += FIELD_DRIVE_STRENGTH;
+        force.x += Config::FIELD_START_DRIVE_X;
     }
     else if (y < 170.0f)
     {
-        force.x += FIELD_DRIVE_STRENGTH;
-        force.y += (upperLaneCenterY - y) * FIELD_CENTERING_STRENGTH;
+        force.x += Config::FIELD_TOP_DRIVE_X;
+        force.y += (upperLaneCenterY - y) * Config::FIELD_TOP_CENTERING_Y;
     }
     else if (x > 430.0f && y < 362.0f)
     {
-        force.y += FIELD_DRIVE_STRENGTH;
-        force.x += (rightLaneCenterX - x) * FIELD_CENTERING_STRENGTH;
+        force.y += Config::FIELD_RIGHT_DRIVE_Y;
+        force.x += (rightLaneCenterX - x) * Config::FIELD_RIGHT_CENTERING_X;
     }
     else if (y < 450.0f)
     {
-        force.y += FIELD_DRIVE_STRENGTH;
-        force.x += (lowerLaneCenterX - x) * FIELD_CENTERING_STRENGTH;
+        force.y += Config::FIELD_BOTTOM_DRIVE_Y;
+        force.x += (lowerLaneCenterX - x) * Config::FIELD_BOTTOM_CENTERING_X;
     }
     else
     {
-        force.x += (targetCenter.x - x) * FIELD_TARGET_STRENGTH;
-        force.y += (targetCenter.y - y) * FIELD_TARGET_STRENGTH;
+        force.x += (targetCenter.x - x) * Config::FIELD_TARGET_ATTRACTION_X;
+        force.y += (targetCenter.y - y) * Config::FIELD_TARGET_ATTRACTION_Y;
     }
 
     // Слабое глобальное притяжение к центру цели помогает полю быть
     // более плавным на переходах между сегментами коридора.
-    force += (targetCenter - Vector2(x, y)) * FIELD_TARGET_STRENGTH;
+    force += (targetCenter - Vector2(x, y)) * Config::FIELD_GLOBAL_TARGET_ATTRACTION;
 
-    force.x = clampMagnitude(force.x, FIELD_MAX_FORCE);
-    force.y = clampMagnitude(force.y, FIELD_MAX_FORCE);
-    return limitForce(force, FIELD_MAX_FORCE);
+    force.x = clampMagnitude(force.x, Config::FIELD_MAX_FORCE);
+    force.y = clampMagnitude(force.y, Config::FIELD_MAX_FORCE);
+    return limitForce(force, Config::FIELD_MAX_FORCE);
 }
 
 Vector2 Simulation::computePairForce(const Particle &a, const Particle &b) const
@@ -116,27 +140,29 @@ Vector2 Simulation::computePairForce(const Particle &a, const Particle &b) const
     }
 
     float distance = std::sqrt(distanceSquared);
-    if (distance > PAIR_FORCE_CUTOFF)
+    if (distance > Config::LJ_CUTOFF)
     {
         return Vector2(0, 0);
     }
 
-    if (distance < MIN_PAIR_DISTANCE)
+    if (distance < Config::MIN_PAIR_DISTANCE)
     {
-        distance = MIN_PAIR_DISTANCE;
+        distance = Config::MIN_PAIR_DISTANCE;
     }
 
     Vector2 direction = displacement * (1.0f / distance);
-    float delta = distance - MORSE_EQUILIBRIUM_DISTANCE;
-    float expTerm = std::exp(-MORSE_WIDTH * delta);
+    float sigmaOverR = Config::LJ_SIGMA / distance;
+    float sigmaOverR2 = sigmaOverR * sigmaOverR;
+    float sigmaOverR6 = sigmaOverR2 * sigmaOverR2 * sigmaOverR2;
+    float sigmaOverR12 = sigmaOverR6 * sigmaOverR6;
 
-    // Потенциал Морзе:
-    // U(r) = D * (exp(-2a(r-r0)) - 2 exp(-a(r-r0)))
-    // Тогда сила:
-    // F(r) = 2 a D * (exp(-2a(r-r0)) - exp(-a(r-r0))) * r_hat
-    float scalarForce = 2.0f * MORSE_WIDTH * MORSE_DEPTH * (expTerm * expTerm - expTerm);
+    // Потенциал Леннарда-Джонса:
+    // U(r) = 4 epsilon * ((sigma/r)^12 - (sigma/r)^6)
+    // Сила:
+    // F(r) = 24 epsilon / r * (2 (sigma/r)^12 - (sigma/r)^6) * r_hat
+    float scalarForce = (24.0f * Config::LJ_EPSILON / distance) * (2.0f * sigmaOverR12 - sigmaOverR6);
 
-    return limitForce(direction * scalarForce, FIELD_MAX_FORCE);
+    return direction * scalarForce;
 }
 
 void Simulation::applyExternalForces()
@@ -175,32 +201,32 @@ Simulation::Simulation()
     : corridor(std::vector<Vector2>{
                    Vector2(90.0f, 40.0f),
                    Vector2(180.0f, 40.0f),
-                   Vector2(180.0f, 98.0f),
-                   Vector2(560.0f, 98.0f),
+                   Vector2(180.0f, 100.0f),
+                   Vector2(560.0f, 100.0f),
                    Vector2(560.0f, 362.0f),
                    Vector2(360.0f, 362.0f),
                    Vector2(360.0f, 450.0f),
-                   Vector2(415.0f, 450.0f),
-                   Vector2(415.0f, 540.0f),
-                   Vector2(245.0f, 540.0f),
-                   Vector2(245.0f, 450.0f),
+                   Vector2(420.0f, 450.0f),
+                   Vector2(420.0f, 540.0f),
+                   Vector2(240.0f, 540.0f),
+                   Vector2(240.0f, 450.0f),
                    Vector2(300.0f, 450.0f),
                    Vector2(300.0f, 302.0f),
                    Vector2(500.0f, 302.0f),
-                   Vector2(500.0f, 158.0f),
-                   Vector2(180.0f, 158.0f),
+                   Vector2(500.0f, 160.0f),
+                   Vector2(180.0f, 160.0f),
                    Vector2(180.0f, 220.0f),
                    Vector2(90.0f, 220.0f)},
-               WALL_COLOR, WALL_THICKNESS),
-      spawnZone(sf::FloatRect(100.0f, 50.0f, 70.0f, 160.0f), SPAWN_COLOR),
-      targetZone(sf::FloatRect(260.0f, 465.0f, 140.0f, 60.0f), TARGET_COLOR),
-      window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Modeling: Ideal Gas"),
-      cameraController(static_cast<float>(WINDOW_WIDTH), static_cast<float>(WINDOW_HEIGHT),
-                       CAMERA_ZOOM_STEP, CAMERA_MIN_ZOOM, CAMERA_MAX_ZOOM),
-      width(WINDOW_WIDTH), height(WINDOW_HEIGHT),
+               Config::WALL_COLOR, Config::WALL_THICKNESS),
+      spawnZone(sf::FloatRect(90.0f, 40.0f, 90.0f, 180.0f), Config::SPAWN_COLOR),
+      targetZone(sf::FloatRect(240.0f, 450.0f, 180.0f, 90.0f), Config::TARGET_COLOR),
+      window(sf::VideoMode(Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT), "Modeling: Ideal Gas"),
+      cameraController(static_cast<float>(Config::WINDOW_WIDTH), static_cast<float>(Config::WINDOW_HEIGHT),
+                       Config::CAMERA_ZOOM_STEP, Config::CAMERA_MIN_ZOOM, Config::CAMERA_MAX_ZOOM),
+      width(Config::WINDOW_WIDTH), height(Config::WINDOW_HEIGHT),
       rng(std::random_device{}()),
       distPos(0, 1),
-      distVel(-V_MAX, V_MAX)
+      distVel(-Config::V_MAX, Config::V_MAX)
 {
     window.setFramerateLimit(60);
     initParticles();
@@ -209,9 +235,39 @@ Simulation::Simulation()
 void Simulation::initParticles()
 {
     particles.clear();
-    for (int i = 0; i < PARTICLE_COUNT; ++i)
+    for (int i = 0; i < Config::PARTICLE_COUNT; ++i)
     {
-        Vector2 spawnPoint = spawnZone.randomPoint(rng, distPos, PARTICLE_RADIUS);
+        Vector2 spawnPoint;
+        bool foundValidPosition = false;
+
+        for (int attempt = 0; attempt < Config::SPAWN_MAX_ATTEMPTS; ++attempt)
+        {
+            spawnPoint = spawnZone.randomPoint(rng, distPos, Config::PARTICLE_RADIUS);
+            foundValidPosition = true;
+
+            for (const auto &existingParticle : particles)
+            {
+                Vector2 delta = spawnPoint - existingParticle.position;
+                float distanceSquared = delta.x * delta.x + delta.y * delta.y;
+
+                if (distanceSquared < Config::SPAWN_MIN_DISTANCE * Config::SPAWN_MIN_DISTANCE)
+                {
+                    foundValidPosition = false;
+                    break;
+                }
+            }
+
+            if (foundValidPosition)
+            {
+                break;
+            }
+        }
+
+        if (!foundValidPosition)
+        {
+            break;
+        }
+
         float vx = distVel(rng);
         float vy = distVel(rng);
         particles.emplace_back(spawnPoint.x, spawnPoint.y, vx, vy);
@@ -250,28 +306,28 @@ void Simulation::run()
             {
                 if (event.mouseWheelScroll.delta > 0.0f)
                 {
-                    cameraController.zoomAt(1.0f / CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
+                    cameraController.zoomAt(1.0f / Config::CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
                 }
                 else if (event.mouseWheelScroll.delta < 0.0f)
                 {
-                    cameraController.zoomAt(CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
+                    cameraController.zoomAt(Config::CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
                 }
             }
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Add)
             {
-                cameraController.zoomAt(1.0f / CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
+                cameraController.zoomAt(1.0f / Config::CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
             }
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Equal)
             {
-                cameraController.zoomAt(1.0f / CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
+                cameraController.zoomAt(1.0f / Config::CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
             }
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Hyphen)
             {
-                cameraController.zoomAt(CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
+                cameraController.zoomAt(Config::CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
             }
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Subtract)
             {
-                cameraController.zoomAt(CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
+                cameraController.zoomAt(Config::CAMERA_ZOOM_STEP, window, sf::Mouse::getPosition(window));
             }
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Num0)
             {
@@ -280,17 +336,20 @@ void Simulation::run()
             }
         }
 
-        accumulateForces();
-
-        for (auto &p : particles)
+        for (int step = 0; step < Config::PHYSICS_STEPS_PER_FRAME; ++step)
         {
-            Vector2 previousPosition = p.position;
-            p.update(DT);
-            corridor.resolveCollision(p, previousPosition, PARTICLE_RADIUS);
-            targetZone.processParticle(p, PARTICLE_RADIUS);
+            accumulateForces();
+
+            for (auto &p : particles)
+            {
+                Vector2 previousPosition = p.position;
+                p.update(Config::DT);
+                corridor.resolveCollision(p, previousPosition, Config::PARTICLE_RADIUS);
+                targetZone.processParticle(p, Config::PARTICLE_RADIUS);
+            }
         }
 
-        window.clear(BACKGROUND_COLOR);
+        window.clear(Config::BACKGROUND_COLOR);
         cameraController.updateViewport(window);
         window.setView(cameraController.getView());
 
