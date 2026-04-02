@@ -4,12 +4,13 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <random>
+#include "Config.h"
 #include "Particle.h"
 #include "CameraController.h"
 #include "Corridor.h"
 #include "Zone.h"
 
-// Глобальная функция физического поля (пока заглушка)
+// Возвращает силу внешнего поля как F = -grad(U).
 Vector2 getPotentialForce(float x, float y);
 
 class Simulation
