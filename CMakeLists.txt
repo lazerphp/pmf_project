@@ -20,6 +20,13 @@ set(SOURCES
     # но если вынесли туда - добавьте сюда
 )
 
+if(WIN32)
+    # Убираем отдельное консольное окно для графического приложения на Windows.
+    add_executable(simulation WIN32 ${SOURCES})
+else()
+    add_executable(simulation ${SOURCES})
+endif()
+
 add_executable(simulation ${SOURCES})
 
 target_include_directories(simulation PRIVATE include)
