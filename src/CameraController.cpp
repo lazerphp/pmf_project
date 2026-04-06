@@ -4,7 +4,7 @@ CameraController::CameraController()
     : CameraController(800.0f, 600.0f, 1.1f, 0.35f, 4.0f) {}
 
 CameraController::CameraController(float logicalWidth_, float logicalHeight_, float zoomStep_, float minZoomLevel_, float maxZoomLevel_)
-    : view(sf::FloatRect(0.0f, 0.0f, logicalWidth_, logicalHeight_)),
+    : view(sf::FloatRect({0.0f, 0.0f}, {logicalWidth_, logicalHeight_})),
       logicalWidth(logicalWidth_),
       logicalHeight(logicalHeight_),
       zoomLevel(1.0f),
@@ -14,7 +14,7 @@ CameraController::CameraController(float logicalWidth_, float logicalHeight_, fl
       isDragging(false),
       lastDragPixel(0, 0)
 {
-    view.setCenter(logicalWidth * 0.5f, logicalHeight * 0.5f);
+    view.setCenter({logicalWidth * 0.5f, logicalHeight * 0.5f});
 }
 
 void CameraController::updateViewport(const sf::RenderWindow &window)
@@ -24,26 +24,26 @@ void CameraController::updateViewport(const sf::RenderWindow &window)
     float windowRatio = static_cast<float>(winWidth) / static_cast<float>(winHeight);
     float logicalRatio = logicalWidth / logicalHeight;
 
-    sf::FloatRect viewport;
+    sf::FloatRect viewport({0.0f, 0.0f}, {1.0f, 1.0f});
 
     if (windowRatio > logicalRatio)
     {
         float newWidth = logicalRatio * winHeight;
-        viewport.left = (winWidth - newWidth) / 2.0f / winWidth;
-        viewport.top = 0.0f;
-        viewport.width = newWidth / winWidth;
-        viewport.height = 1.0f;
+        viewport.position.x = (winWidth - newWidth) / 2.0f / winWidth;
+        viewport.position.y = 0.0f;
+        viewport.size.x = newWidth / winWidth;
+        viewport.size.y = 1.0f;
     }
     else
     {
         float newHeight = winWidth / logicalRatio;
-        viewport.left = 0.0f;
-        viewport.top = (winHeight - newHeight) / 2.0f / winHeight;
-        viewport.width = 1.0f;
-        viewport.height = newHeight / winHeight;
+        viewport.position.x = 0.0f;
+        viewport.position.y = (winHeight - newHeight) / 2.0f / winHeight;
+        viewport.size.x = 1.0f;
+        viewport.size.y = newHeight / winHeight;
     }
 
-    view.setSize(logicalWidth * zoomLevel, logicalHeight * zoomLevel);
+    view.setSize({logicalWidth * zoomLevel, logicalHeight * zoomLevel});
     view.setViewport(viewport);
 }
 
@@ -90,7 +90,7 @@ void CameraController::dragTo(const sf::RenderWindow &window, const sf::Vector2i
 void CameraController::reset()
 {
     zoomLevel = 1.0f;
-    view.setCenter(logicalWidth * 0.5f, logicalHeight * 0.5f);
+    view.setCenter({logicalWidth * 0.5f, logicalHeight * 0.5f});
 }
 
 const sf::View &CameraController::getView() const

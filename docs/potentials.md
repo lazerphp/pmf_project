@@ -1,0 +1,371 @@
+# Потенциалы и силы в модели
+
+Этот файл фиксирует формулы, которые сейчас используются в [Simulation.cpp](/home/lin/urfu_proj_cpp/src/Simulation.cpp), чтобы их было удобно менять без повторного разбора кода.
+
+## Используемые константы
+
+### Константы внешнего поля
+
+- `START_DRIVE_X = 40.0` - коэффициент линейного убывания потенциала по $x$ на стартовом участке; задает постоянную силу вправо.
+- `TOP_DRIVE_X = 25.0` - коэффициент линейного убывания потенциала по $x$ на верхнем горизонтальном участке; задает постоянную силу вправо.
+- `TOP_CENTERING_Y = 0.2` - коэффициент квадратичного прижатия к центральной линии верхнего участка по оси $y$.
+- `RIGHT_DRIVE_Y = 18.0` - коэффициент линейного убывания потенциала по $y$ на правом вертикальном участке; задает постоянную силу вниз.
+- `RIGHT_CENTERING_X = 0.12` - коэффициент квадратичного прижатия к центральной линии правого участка по оси $x$.
+- `BOTTOM_DRIVE_Y = 18.0` - коэффициент линейного убывания потенциала по $y$ на нижнем участке; задает постоянную силу вниз.
+- `BOTTOM_CENTERING_X = 0.12` - коэффициент квадратичного прижатия к центральной линии нижнего участка по оси $x$.
+- `TARGET_ATTRACTION_X = 0.035` - коэффициент локального гармонического притяжения к цели по оси $x$.
+- `TARGET_ATTRACTION_Y = 0.035` - коэффициент локального гармонического притяжения к цели по оси $y$.
+- `GLOBAL_TARGET_ATTRACTION = 0.035` - коэффициент глобального гармонического притяжения к центру цели по всему коридору.
+- `MAX_FORCE = 160.0` - верхнее ограничение на модуль силы внешнего поля в текущей численной реализации.
+
+### Геометрические константы внешнего поля
+
+- `TOP_SEGMENT_X_MAX = 180.0` - максимальная координата $x$, до которой действует стартовый участок поля.
+- `TOP_SEGMENT_Y_MAX = 170.0` - порог по $y$, определяющий верхний горизонтальный участок.
+- `RIGHT_SEGMENT_X_MIN = 430.0` - минимальная координата $x$, начиная с которой действует правый вертикальный участок.
+- `RIGHT_SEGMENT_Y_MAX = 362.0` - максимальная координата $y$, до которой действует правый вертикальный участок.
+- `LOWER_SEGMENT_Y_MAX = 450.0` - максимальная координата $y$, до которой действует нижний участок перед целевой областью.
+- `UPPER_LANE_CENTER_Y = 130.0` - координата центральной линии верхнего участка по оси $y$.
+- `RIGHT_LANE_CENTER_X = 530.0` - координата центральной линии правого участка по оси $x$.
+- `LOWER_LANE_CENTER_X = 330.0` - координата центральной линии нижнего участка по оси $x$.
+- `TARGET_CENTER = (330.0, 495.0)` - центр целевой области, к которому направлено локальное и глобальное притяжение.
+
+### Константы межмолекулярного потенциала
+
+- `EPSILON = 900.0` - энергетический масштаб потенциала Леннарда-Джонса; определяет силу притяжения и отталкивания.
+- `CONTACT_DISTANCE_TO_SIGMA = 1.122462048` - коэффициент связи между эффективным диаметром частицы и параметром $\sigma$.
+- `CUTOFF_MULTIPLIER = 2.5` - множитель для радиуса обрезания потенциала.
+- `MIN_DISTANCE_MULTIPLIER = 0.6` - множитель для минимального допустимого расстояния в расчете парной силы.
+- `PARTICLE_RADIUS = 5.0` - радиус частицы, используемый при вычислении $\sigma$.
+- `sigma() = \frac{2 \cdot PARTICLE\_RADIUS}{CONTACT\_DISTANCE\_TO\_SIGMA} \approx 8.909` - характерная длина потенциала Леннарда-Джонса.
+- `cutoff() = CUTOFF\_MULTIPLIER \cdot sigma() \approx 22.272` - радиус обрезания межчастичного взаимодействия; при больших расстояниях сила в коде принимается равной нулю.
+- `minPairDistance() = MIN\_DISTANCE\_MULTIPLIER \cdot sigma() \approx 5.345` - минимальное расстояние, используемое в расчетах для защиты от слишком больших сил при почти совпадающих частицах.
+
+## Общая схема
+
+Для любой потенциальной энергии $U$ сила вычисляется как
+
+$$
+\mathbf{F} = - \nabla U.
+$$
+
+Для внешнего поля потенциал зависит от положения частицы:
+
+$$
+U = U_{\text{ext}}(x, y).
+$$
+
+Для межчастичного взаимодействия потенциал зависит только от расстояния между частицами:
+
+$$
+U = U_{\text{pair}}(r), \quad r = |\mathbf{r}_a - \mathbf{r}_b|.
+$$
+
+## Внешнее поле
+
+В коде внешний потенциал задается кусочно и дополняется глобальным притяжением к целевой точке.
+
+Обозначим центр цели как
+
+$$
+\mathbf{r}_{\text{target}} = (x_t, y_t).
+$$
+
+Тогда полный внешний потенциал имеет вид
+
+$$
+U_{\text{ext}}(x, y) = U_{\text{segment}}(x, y) + U_{\text{global}}(x, y).
+$$
+
+### 1. Стартовый участок
+
+Если $x < TOP\_SEGMENT\_X\_MAX$, то
+
+$$
+U_{\text{segment}}(x, y) = - START\_DRIVE\_X \cdot x.
+$$
+
+Градиент:
+
+$$
+\nabla U_{\text{segment}} =
+\left(
+\frac{\partial U}{\partial x},
+\frac{\partial U}{\partial y}
+\right)
+=
+(-START\_DRIVE\_X, 0).
+$$
+
+Сила:
+
+$$
+\mathbf{F}_{\text{segment}} = - \nabla U_{\text{segment}} = (START\_DRIVE\_X, 0).
+$$
+
+### 2. Верхний горизонтальный участок
+
+Если выполняется предыдущий `else if`, то
+
+$$
+U_{\text{segment}}(x, y) =
+- TOP\_DRIVE\_X \cdot x
++ \frac{1}{2} TOP\_CENTERING\_Y \, (y - UPPER\_LANE\_CENTER\_Y)^2.
+$$
+
+Градиент:
+
+$$
+\nabla U_{\text{segment}} =
+\left(
+-TOP\_DRIVE\_X,
+TOP\_CENTERING\_Y \, (y - UPPER\_LANE\_CENTER\_Y)
+\right).
+$$
+
+Сила:
+
+$$
+\mathbf{F}_{\text{segment}} =
+\left(
+TOP\_DRIVE\_X,
+-TOP\_CENTERING\_Y \, (y - UPPER\_LANE\_CENTER\_Y)
+\right).
+$$
+
+### 3. Правый вертикальный участок
+
+Если выполняется следующий `else if`, то
+
+$$
+U_{\text{segment}}(x, y) =
+- RIGHT\_DRIVE\_Y \cdot y
++ \frac{1}{2} RIGHT\_CENTERING\_X \, (x - RIGHT\_LANE\_CENTER\_X)^2.
+$$
+
+Градиент:
+
+$$
+\nabla U_{\text{segment}} =
+\left(
+RIGHT\_CENTERING\_X \, (x - RIGHT\_LANE\_CENTER\_X),
+-RIGHT\_DRIVE\_Y
+\right).
+$$
+
+Сила:
+
+$$
+\mathbf{F}_{\text{segment}} =
+\left(
+-RIGHT\_CENTERING\_X \, (x - RIGHT\_LANE\_CENTER\_X),
+RIGHT\_DRIVE\_Y
+\right).
+$$
+
+### 4. Нижний участок
+
+Если выполняется следующий `else if`, то
+
+$$
+U_{\text{segment}}(x, y) =
+- BOTTOM\_DRIVE\_Y \cdot y
++ \frac{1}{2} BOTTOM\_CENTERING\_X \, (x - LOWER\_LANE\_CENTER\_X)^2.
+$$
+
+Градиент:
+
+$$
+\nabla U_{\text{segment}} =
+\left(
+BOTTOM\_CENTERING\_X \, (x - LOWER\_LANE\_CENTER\_X),
+-BOTTOM\_DRIVE\_Y
+\right).
+$$
+
+Сила:
+
+$$
+\mathbf{F}_{\text{segment}} =
+\left(
+-BOTTOM\_CENTERING\_X \, (x - LOWER\_LANE\_CENTER\_X),
+BOTTOM\_DRIVE\_Y
+\right).
+$$
+
+### 5. Финальная область у цели
+
+Иначе используется локальная потенциальная яма около целевой точки:
+
+$$
+U_{\text{segment}}(x, y) =
+\frac{1}{2} TARGET\_ATTRACTION\_X \, (x - x_t)^2
++ \frac{1}{2} TARGET\_ATTRACTION\_Y \, (y - y_t)^2.
+$$
+
+Градиент:
+
+$$
+\nabla U_{\text{segment}} =
+\left(
+TARGET\_ATTRACTION\_X \, (x - x_t),
+TARGET\_ATTRACTION\_Y \, (y - y_t)
+\right).
+$$
+
+Сила:
+
+$$
+\mathbf{F}_{\text{segment}} =
+\left(
+-TARGET\_ATTRACTION\_X \, (x - x_t),
+-TARGET\_ATTRACTION\_Y \, (y - y_t)
+\right).
+$$
+
+### 6. Глобальное притяжение к цели
+
+Во всех областях дополнительно действует
+
+$$
+U_{\text{global}}(x, y) =
+\frac{1}{2} GLOBAL\_TARGET\_ATTRACTION
+\left(
+(x - x_t)^2 + (y - y_t)^2
+\right).
+$$
+
+Градиент:
+
+$$
+\nabla U_{\text{global}} =
+GLOBAL\_TARGET\_ATTRACTION
+\left(
+x - x_t,
+y - y_t
+\right).
+$$
+
+Сила:
+
+$$
+\mathbf{F}_{\text{global}} =
+- GLOBAL\_TARGET\_ATTRACTION
+\left(
+x - x_t,
+y - y_t
+\right).
+$$
+
+### Полная сила внешнего поля
+
+Полный градиент:
+
+$$
+\nabla U_{\text{ext}} = \nabla U_{\text{segment}} + \nabla U_{\text{global}}.
+$$
+
+Полная сила:
+
+$$
+\mathbf{F}_{\text{ext}} = - \nabla U_{\text{ext}}.
+$$
+
+Примечание: в текущем коде после вычисления этой силы применяется ограничение по величине через `MAX_FORCE`. Это численная стабилизация, а не часть математического определения потенциала.
+
+## Межмолекулярное взаимодействие
+
+Сейчас используется потенциал Леннарда-Джонса.
+
+Обозначим расстояние между двумя частицами как
+
+$$
+r = |\mathbf{r}_a - \mathbf{r}_b|.
+$$
+
+### Потенциал
+
+$$
+U_{\text{pair}}(r) =
+4 \varepsilon
+\left[
+\left(\frac{\sigma}{r}\right)^{12}
+- \left(\frac{\sigma}{r}\right)^6
+\right].
+$$
+
+Здесь:
+
+$$
+\varepsilon = EPSILON,
+\quad
+\sigma = sigma().
+$$
+
+### Радиальная производная
+
+$$
+\frac{dU_{\text{pair}}}{dr}
+=
+\frac{24 \varepsilon}{r}
+\left[
+\left(\frac{\sigma}{r}\right)^6
+- 2 \left(\frac{\sigma}{r}\right)^{12}
+\right].
+$$
+
+### Градиент потенциала
+
+Пусть
+
+$$
+\mathbf{d} = \mathbf{r}_a - \mathbf{r}_b,
+\quad
+r = |\mathbf{d}|,
+\quad
+\hat{\mathbf{r}} = \frac{\mathbf{d}}{r}.
+$$
+
+Тогда градиент по координатам частицы $a$:
+
+$$
+\nabla U_{\text{pair}} =
+\frac{dU_{\text{pair}}}{dr} \, \hat{\mathbf{r}}.
+$$
+
+### Сила взаимодействия
+
+Сила, действующая на частицу $a$ со стороны частицы $b$:
+
+$$
+\mathbf{F}_{ab} = - \nabla U_{\text{pair}}.
+$$
+
+То есть
+
+$$
+\mathbf{F}_{ab} =
+- \frac{dU_{\text{pair}}}{dr} \, \hat{\mathbf{r}}.
+$$
+
+На вторую частицу действует противоположная сила:
+
+$$
+\mathbf{F}_{ba} = - \mathbf{F}_{ab}.
+$$
+
+## Численные особенности текущей реализации
+
+Это не новые формулы потенциала, а особенности текущего кода:
+
+- Если $r > cutoff()$, парная сила принудительно считается равной нулю.
+- Если $r < minPairDistance()$, то в расчете используется $r = minPairDistance()$.
+- Внешнее поле задано кусочно по областям через `if / else if / else`.
+
+## Где это в коде
+
+- Внешний потенциал и его градиент: [src/Simulation.cpp](/home/lin/urfu_proj_cpp/src/Simulation.cpp#L55)
+- Внешняя сила: [src/Simulation.cpp](/home/lin/urfu_proj_cpp/src/Simulation.cpp#L134)
+- Парный потенциал и его радиальная производная: [src/Simulation.cpp](/home/lin/urfu_proj_cpp/src/Simulation.cpp#L108)
+- Градиент парного потенциала: [src/Simulation.cpp](/home/lin/urfu_proj_cpp/src/Simulation.cpp#L124)
+- Парная сила: [src/Simulation.cpp](/home/lin/urfu_proj_cpp/src/Simulation.cpp#L144)

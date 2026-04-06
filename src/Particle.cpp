@@ -17,8 +17,8 @@ Particle::Particle(float x, float y, float vx, float vy)
 
     shape.setRadius(Config::Simulation::PARTICLE_RADIUS);
     shape.setFillColor(sf::Color::Cyan);
-    shape.setOrigin(Config::Simulation::PARTICLE_RADIUS, Config::Simulation::PARTICLE_RADIUS);
-    shape.setPosition(position.x, position.y);
+    shape.setOrigin({Config::Simulation::PARTICLE_RADIUS, Config::Simulation::PARTICLE_RADIUS});
+    shape.setPosition({position.x, position.y});
 }
 
 void Particle::clearForces()
@@ -31,7 +31,7 @@ void Particle::update(float dt)
     velocity += acceleration * dt;
     position += velocity * dt;
     clearForces();
-    shape.setPosition(position.x, position.y);
+    shape.setPosition({position.x, position.y});
 }
 
 void Particle::applyForce(const Vector2 &force)

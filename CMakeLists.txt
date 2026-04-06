@@ -1,13 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 project(GasSimulation LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
-
-# Указываем директории с заголовками
-include_directories(include)
+find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System)
 
 # Собираем список исходных файлов
 set(SOURCES
@@ -23,7 +22,9 @@ set(SOURCES
 
 add_executable(simulation ${SOURCES})
 
-target_link_libraries(simulation PRIVATE sfml-graphics sfml-window sfml-system)
+target_include_directories(simulation PRIVATE include)
+
+target_link_libraries(simulation PRIVATE SFML::Graphics SFML::Window SFML::System)
 
 if(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)

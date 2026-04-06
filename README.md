@@ -19,8 +19,8 @@
 > `git switch --detach iter-1` (для первой версии) или `git switch main` (для последней стабильной).
 
 ## Технологии
-- **Язык:** C++11
-- **Графика:** SFML (Simple and Fast Multimedia Library) v2.5+
+- **Язык:** C++17
+- **Графика:** SFML (Simple and Fast Multimedia Library) v3.0+
 - **Сборка:** CMake
 - **Контроль версий:** Git
 - **Платформы:** Linux (Ubuntu), Windows (Visual Studio)
@@ -45,9 +45,9 @@ project_root/
 ## Инструкция по запуску
 
 ### Предварительные требования
-Для компиляции необходима библиотека **SFML**.
-- **Linux:** `sudo apt install libsfml-dev`
-- **Windows:** Скачать архив с [sfml-dev.org](https://www.sfml-dev.org/download/sfml/) (версия под ваш MSVC) и распаковать (например, в `C:\Libs\SFML`).
+Для компиляции необходима библиотека **SFML 3**.
+- **Linux/WSL:** установите нативную сборку SFML 3 для Linux и при необходимости передайте `-DSFML_DIR=/path/to/SFML/lib/cmake/SFML`.
+- **Windows:** скачайте архив SFML 3 с [sfml-dev.org](https://www.sfml-dev.org/download/) под ваш MSVC и распакуйте, например, в `C:\Libs\SFML`.
 
 ---
 
@@ -59,7 +59,9 @@ git clone <URL_РЕПОЗИТОРИЯ>
 cd <ПАПКА_ПРОЕКТА>
 
 # 2. Установка зависимостей
-sudo apt update && sudo apt install g++ cmake make libsfml-dev
+sudo apt update && sudo apt install g++ cmake make
+# Затем установите SFML 3 для Linux/WSL и при необходимости укажите путь:
+# cmake -S . -B build -DSFML_DIR=/path/to/SFML/lib/cmake/SFML
 
 # 3. Выбор итерации (опционально)
 # git switch --detach iter-1  # Для запуска 1-й итерации
@@ -76,7 +78,7 @@ make
 ### 🔹 Вариант Б: Windows (Visual Studio 2019/2022)
 
 #### Шаг 1: Подготовка SFML
-1. Скачайте версию SFML, соответствующую вашей версии Visual Studio (MSVC 16.0 для VS2019, 17.0 для VS2022) и разрядности (x64).
+1. Скачайте версию SFML 3, соответствующую вашей версии Visual Studio (MSVC 16.0 для VS2019, 17.0 для VS2022) и разрядности (x64).
 2. Распакуйте в путь без пробелов, например: `C:\Libs\SFML`.
 
 #### Шаг 2: Открытие в Visual Studio
@@ -96,7 +98,7 @@ make
 #### Шаг 4: DLL и запуск
 1. После сборки найдите `.exe` в папке `out/build/x64-Debug/`.
 2. Скопируйте все `.dll` файлы из `C:\Libs\SFML\bin` в эту же папку (`out/build/x64-Debug/`).
-   - Нужны: `sfml-graphics-2.dll`, `sfml-window-2.dll`, `sfml-system-2.dll`.
+   - Нужны DLL из SFML 3, например: `sfml-graphics-3.dll`, `sfml-window-3.dll`, `sfml-system-3.dll`.
 3. Запустите `simulation.exe` через VS (правой кнопкой -> Запуск) или напрямую.
 
 **Управление в программе:**

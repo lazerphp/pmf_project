@@ -1,6 +1,6 @@
 #include "Zone.h"
 
-Zone::Zone() : bounds(0.0f, 0.0f, 0.0f, 0.0f), color(sf::Color::Transparent) {}
+Zone::Zone() : bounds({0.0f, 0.0f}, {0.0f, 0.0f}), color(sf::Color::Transparent) {}
 
 Zone::Zone(const sf::FloatRect &bounds_, const sf::Color &color_)
     : bounds(bounds_), color(color_) {}
@@ -9,16 +9,16 @@ Zone::~Zone() {}
 
 bool Zone::contains(const Vector2 &position, float margin) const
 {
-    return position.x >= bounds.left + margin &&
-           position.x <= bounds.left + bounds.width - margin &&
-           position.y >= bounds.top + margin &&
-           position.y <= bounds.top + bounds.height - margin;
+    return position.x >= bounds.position.x + margin &&
+           position.x <= bounds.position.x + bounds.size.x - margin &&
+           position.y >= bounds.position.y + margin &&
+           position.y <= bounds.position.y + bounds.size.y - margin;
 }
 
 void Zone::draw(sf::RenderWindow &window) const
 {
-    sf::RectangleShape shape(sf::Vector2f(bounds.width, bounds.height));
-    shape.setPosition(bounds.left, bounds.top);
+    sf::RectangleShape shape(bounds.size);
+    shape.setPosition(bounds.position);
     shape.setFillColor(color);
     window.draw(shape);
 }
@@ -35,8 +35,8 @@ SpawnZone::SpawnZone(const sf::FloatRect &bounds_, const sf::Color &color_)
 
 Vector2 SpawnZone::randomPoint(std::mt19937 &rng, std::uniform_real_distribution<float> &dist, float margin) const
 {
-    float x = bounds.left + margin + dist(rng) * (bounds.width - 2.0f * margin);
-    float y = bounds.top + margin + dist(rng) * (bounds.height - 2.0f * margin);
+    float x = bounds.position.x + margin + dist(rng) * (bounds.size.x - 2.0f * margin);
+    float y = bounds.position.y + margin + dist(rng) * (bounds.size.y - 2.0f * margin);
     return Vector2(x, y);
 }
 

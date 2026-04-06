@@ -114,7 +114,7 @@ void Corridor::resolveCollision(Particle &particle, const Vector2 &previousPosit
         particle.velocity.y = -particle.velocity.y;
     }
 
-    particle.shape.setPosition(particle.position.x, particle.position.y);
+    particle.shape.setPosition({particle.position.x, particle.position.y});
 }
 
 void Corridor::draw(sf::RenderWindow &window) const
@@ -125,10 +125,10 @@ void Corridor::draw(sf::RenderWindow &window) const
         float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
         float angle = std::atan2(delta.y, delta.x) * 180.0f / 3.14159265f;
 
-        sf::RectangleShape wall(sf::Vector2f(length, wallThickness));
-        wall.setOrigin(0.0f, wallThickness * 0.5f);
-        wall.setPosition(segment.start.x, segment.start.y);
-        wall.setRotation(angle);
+        sf::RectangleShape wall({length, wallThickness});
+        wall.setOrigin({0.0f, wallThickness * 0.5f});
+        wall.setPosition({segment.start.x, segment.start.y});
+        wall.setRotation(sf::degrees(angle));
         wall.setFillColor(wallColor);
         window.draw(wall);
     }
