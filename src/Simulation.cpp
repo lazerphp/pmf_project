@@ -53,55 +53,55 @@ namespace
         return force * scale;
     }
 
-    PotentialSample getExternalPotentialSample(float x, float y)
+    PotentialSample getExternalPotentialSample(float x, float y, const Config::Field::Params &fieldParams)
     {
         float value = 0.0f;
         Vector2 gradient(0.0f, 0.0f);
 
         if (x < Config::Field::TOP_SEGMENT_X_MAX)
         {
-            value += -Config::Field::START_DRIVE_X * x;
-            gradient.x += -Config::Field::START_DRIVE_X;
+            value += -fieldParams.startDriveX * x;
+            gradient.x += -fieldParams.startDriveX;
         }
         else if (y < Config::Field::TOP_SEGMENT_Y_MAX)
         {
-            value += -Config::Field::TOP_DRIVE_X * x;
-            value += 0.5f * Config::Field::TOP_CENTERING_Y * (y - Config::Field::UPPER_LANE_CENTER_Y) *
+            value += -fieldParams.topDriveX * x;
+            value += 0.5f * fieldParams.topCenteringY * (y - Config::Field::UPPER_LANE_CENTER_Y) *
                      (y - Config::Field::UPPER_LANE_CENTER_Y);
-            gradient.x += -Config::Field::TOP_DRIVE_X;
-            gradient.y += Config::Field::TOP_CENTERING_Y * (y - Config::Field::UPPER_LANE_CENTER_Y);
+            gradient.x += -fieldParams.topDriveX;
+            gradient.y += fieldParams.topCenteringY * (y - Config::Field::UPPER_LANE_CENTER_Y);
         }
         else if (x > Config::Field::RIGHT_SEGMENT_X_MIN && y < Config::Field::RIGHT_SEGMENT_Y_MAX)
         {
-            value += -Config::Field::RIGHT_DRIVE_Y * y;
-            value += 0.5f * Config::Field::RIGHT_CENTERING_X * (x - Config::Field::RIGHT_LANE_CENTER_X) *
+            value += -fieldParams.rightDriveY * y;
+            value += 0.5f * fieldParams.rightCenteringX * (x - Config::Field::RIGHT_LANE_CENTER_X) *
                      (x - Config::Field::RIGHT_LANE_CENTER_X);
-            gradient.x += Config::Field::RIGHT_CENTERING_X * (x - Config::Field::RIGHT_LANE_CENTER_X);
-            gradient.y += -Config::Field::RIGHT_DRIVE_Y;
+            gradient.x += fieldParams.rightCenteringX * (x - Config::Field::RIGHT_LANE_CENTER_X);
+            gradient.y += -fieldParams.rightDriveY;
         }
         else if (y < Config::Field::LOWER_SEGMENT_Y_MAX)
         {
-            value += -Config::Field::BOTTOM_DRIVE_Y * y;
-            value += 0.5f * Config::Field::BOTTOM_CENTERING_X * (x - Config::Field::LOWER_LANE_CENTER_X) *
+            value += -fieldParams.bottomDriveY * y;
+            value += 0.5f * fieldParams.bottomCenteringX * (x - Config::Field::LOWER_LANE_CENTER_X) *
                      (x - Config::Field::LOWER_LANE_CENTER_X);
-            gradient.x += Config::Field::BOTTOM_CENTERING_X * (x - Config::Field::LOWER_LANE_CENTER_X);
-            gradient.y += -Config::Field::BOTTOM_DRIVE_Y;
+            gradient.x += fieldParams.bottomCenteringX * (x - Config::Field::LOWER_LANE_CENTER_X);
+            gradient.y += -fieldParams.bottomDriveY;
         }
         else
         {
-            value += 0.5f * Config::Field::TARGET_ATTRACTION_X * (x - Config::Field::TARGET_CENTER.x) *
+            value += 0.5f * fieldParams.targetAttractionX * (x - Config::Field::TARGET_CENTER.x) *
                      (x - Config::Field::TARGET_CENTER.x);
-            value += 0.5f * Config::Field::TARGET_ATTRACTION_Y * (y - Config::Field::TARGET_CENTER.y) *
+            value += 0.5f * fieldParams.targetAttractionY * (y - Config::Field::TARGET_CENTER.y) *
                      (y - Config::Field::TARGET_CENTER.y);
-            gradient.x += Config::Field::TARGET_ATTRACTION_X * (x - Config::Field::TARGET_CENTER.x);
-            gradient.y += Config::Field::TARGET_ATTRACTION_Y * (y - Config::Field::TARGET_CENTER.y);
+            gradient.x += fieldParams.targetAttractionX * (x - Config::Field::TARGET_CENTER.x);
+            gradient.y += fieldParams.targetAttractionY * (y - Config::Field::TARGET_CENTER.y);
         }
 
         // Слабое глобальное притяжение к центру цели  для плавности
         Vector2 targetDelta(x - Config::Field::TARGET_CENTER.x, y - Config::Field::TARGET_CENTER.y);
-        value += 0.5f * Config::Field::GLOBAL_TARGET_ATTRACTION *
+        value += 0.5f * fieldParams.globalTargetAttraction *
                  (targetDelta.x * targetDelta.x + targetDelta.y * targetDelta.y);
-        gradient += targetDelta * Config::Field::GLOBAL_TARGET_ATTRACTION;
+        gradient += targetDelta * fieldParams.globalTargetAttraction;
 
         return PotentialSample{value, gradient};
     }
@@ -132,14 +132,14 @@ namespace
     }
 } // namespace
 
-Vector2 getPotentialForce(float x, float y)
+Vector2 getPotentialForce(float x, float y, const Config::Field::Params &fieldParams)
 {
-    PotentialSample sample = getExternalPotentialSample(x, y);
+    PotentialSample sample = getExternalPotentialSample(x, y, fieldParams);
     Vector2 force = sample.gradient * -1.0f;
 
-    force.x = clampMagnitude(force.x, Config::Field::MAX_FORCE);
-    force.y = clampMagnitude(force.y, Config::Field::MAX_FORCE);
-    return limitForce(force, Config::Field::MAX_FORCE);
+    force.x = clampMagnitude(force.x, fieldParams.maxForce);
+    force.y = clampMagnitude(force.y, fieldParams.maxForce);
+    return limitForce(force, fieldParams.maxForce);
 }
 
 Vector2 Simulation::computePairForce(const Particle &a, const Particle &b) const
@@ -174,7 +174,7 @@ void Simulation::applyExternalForces()
 {
     for (auto &p : particles)
     {
-        p.applyForce(getPotentialForce(p.position.x, p.position.y));
+        p.applyForce(getPotentialForce(p.position.x, p.position.y, fieldParams));
     }
 }
 
@@ -225,6 +225,7 @@ Simulation::Simulation()
                Config::Visuals::WALL_COLOR, Config::Visuals::WALL_THICKNESS),
       spawnZone(sf::FloatRect({90.0f, 40.0f}, {90.0f, 180.0f}), Config::Visuals::SPAWN_COLOR),
       targetZone(sf::FloatRect({240.0f, 450.0f}, {180.0f, 90.0f}), Config::Visuals::TARGET_COLOR),
+      fieldParams(Config::Field::defaultParams()),
       window(sf::VideoMode({Config::Window::WIDTH, Config::Window::HEIGHT}), "Modeling: Ideal Gas"),
       cameraController(static_cast<float>(Config::Window::WIDTH), static_cast<float>(Config::Window::HEIGHT), Config::Camera::ZOOM_STEP, Config::Camera::MIN_ZOOM, Config::Camera::MAX_ZOOM),
       width(Config::Window::WIDTH),

@@ -103,6 +103,38 @@ const float RIGHT_LANE_CENTER_X = 530.0f;
 const float LOWER_LANE_CENTER_X = 330.0f;
 // Центр, к которому поле притягивает частицы в конце и глобально.
 const Vector2 TARGET_CENTER(330.0f, 495.0f);
+
+struct Params
+{
+    float startDriveX;
+    float topDriveX;
+    float topCenteringY;
+    float rightDriveY;
+    float rightCenteringX;
+    float bottomDriveY;
+    float bottomCenteringX;
+    float targetAttractionX;
+    float targetAttractionY;
+    float globalTargetAttraction;
+    float maxForce;
+};
+
+inline Params defaultParams()
+{
+    return Params{
+        START_DRIVE_X,
+        TOP_DRIVE_X,
+        TOP_CENTERING_Y,
+        RIGHT_DRIVE_Y,
+        RIGHT_CENTERING_X,
+        BOTTOM_DRIVE_Y,
+        BOTTOM_CENTERING_X,
+        TARGET_ATTRACTION_X,
+        TARGET_ATTRACTION_Y,
+        GLOBAL_TARGET_ATTRACTION,
+        MAX_FORCE,
+    };
+}
 } // namespace Field
 
 namespace Camera

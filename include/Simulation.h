@@ -11,7 +11,7 @@
 #include "Zone.h"
 
 // Возвращает силу внешнего поля как F = -grad(U).
-Vector2 getPotentialForce(float x, float y);
+Vector2 getPotentialForce(float x, float y, const Config::Field::Params &fieldParams);
 
 class Simulation
 {
@@ -20,6 +20,7 @@ private:
     Corridor corridor;
     SpawnZone spawnZone;
     TargetZone targetZone;
+    Config::Field::Params fieldParams;
     sf::RenderWindow window;
     CameraController cameraController;
     float width, height;
