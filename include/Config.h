@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/Graphics/Rect.hpp>
 #include "Vector2.h"
 
 namespace Config
@@ -21,6 +22,38 @@ const float DT = 0.001f;
 const float PARTICLE_RADIUS = 5.0f;
 const float V_MAX = 200.0f;
 } // namespace Simulation
+
+namespace World
+{
+// Начало координат находится в левом верхнем углу сцены.
+// Ось X направлена вправо, ось Y направлена вниз, как в системе координат SFML.
+const float GRID_UNIT = 20.0f;
+
+inline float grid(float value)
+{
+    return value * GRID_UNIT;
+}
+
+inline float gridX(float x)
+{
+    return grid(x);
+}
+
+inline float gridY(float y)
+{
+    return grid(y);
+}
+
+inline Vector2 gridPoint(float x, float y)
+{
+    return Vector2(gridX(x), gridY(y));
+}
+
+inline sf::FloatRect gridRect(float x, float y, float width, float height)
+{
+    return sf::FloatRect({gridX(x), gridY(y)}, {grid(width), grid(height)});
+}
+} // namespace World
 
 namespace LennardJones
 {
@@ -85,24 +118,24 @@ const float GLOBAL_TARGET_ATTRACTION = 0.035f;
 const float MAX_FORCE = 160.0f;
 
 // До этой X-координаты действует стартовый участок поля.
-const float TOP_SEGMENT_X_MAX = 180.0f;
+const float TOP_SEGMENT_X_MAX = World::gridX(9.0f);
 // Выше этой Y-координаты частица считается в верхнем горизонтальном участке.
-const float TOP_SEGMENT_Y_MAX = 170.0f;
+const float TOP_SEGMENT_Y_MAX = World::gridY(8.5f);
 // Правее этой X-координаты начинается правый вертикальный участок.
-const float RIGHT_SEGMENT_X_MIN = 430.0f;
+const float RIGHT_SEGMENT_X_MIN = World::gridX(21.5f);
 // До этой Y-координаты действует правый вертикальный участок.
-const float RIGHT_SEGMENT_Y_MAX = 362.0f;
+const float RIGHT_SEGMENT_Y_MAX = World::gridY(18.1f);
 // До этой Y-координаты действует нижний участок перед зоной цели.
-const float LOWER_SEGMENT_Y_MAX = 450.0f;
+const float LOWER_SEGMENT_Y_MAX = World::gridY(22.5f);
 
 // Y-координата центральной линии верхнего участка.
-const float UPPER_LANE_CENTER_Y = 130.0f;
+const float UPPER_LANE_CENTER_Y = World::gridY(6.5f);
 // X-координата центральной линии правого вертикального участка.
-const float RIGHT_LANE_CENTER_X = 530.0f;
+const float RIGHT_LANE_CENTER_X = World::gridX(26.5f);
 // X-координата центральной линии нижнего участка.
-const float LOWER_LANE_CENTER_X = 330.0f;
+const float LOWER_LANE_CENTER_X = World::gridX(16.5f);
 // Центр, к которому поле притягивает частицы в конце и глобально.
-const Vector2 TARGET_CENTER(330.0f, 495.0f);
+const Vector2 TARGET_CENTER = World::gridPoint(16.5f, 24.75f);
 
 struct Params
 {
