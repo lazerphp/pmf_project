@@ -1,0 +1,56 @@
+{
+  "optimizer": {
+    "method": "gradient_descent",
+    "iterations": 30,
+    "learningRate": 1.0,
+    "finiteDifferenceStep": 1.0,
+    "clampToRange": true
+  },
+  "runConfigPath": "run_config.json",
+  "runConfig": {
+    "particleCount": 20,
+    "maxSimulationTime": 60.0
+  },
+  "optimizationParameters": [
+    {
+      "name": "fieldModel.sources.sources[0].strength",
+      "min": -2200.0,
+      "max": -1600.0
+    },
+    {
+      "name": "fieldModel.sources.sources[1].strength",
+      "min": -3000.0,
+      "max": -2400.0
+    },
+    {
+      "name": "fieldModel.sources.sources[2].strength",
+      "min": -3800.0,
+      "max": -3200.0
+    },
+    {
+      "name": "fieldModel.sources.sources[3].strength",
+      "min": -4600.0,
+      "max": -4000.0
+    },
+    {
+      "name": "fieldModel.sources.sources[0].sigma",
+      "min": 35.0,
+      "max": 55.0
+    },
+    {
+      "name": "fieldModel.sources.sources[1].sigma",
+      "min": 30.0,
+      "max": 50.0
+    },
+    {
+      "name": "fieldModel.sources.sources[2].sigma",
+      "min": 30.0,
+      "max": 50.0
+    },
+    {
+      "name": "fieldModel.sources.sources[3].sigma",
+      "min": 35.0,
+      "max": 55.0
+    }
+  ]
+}

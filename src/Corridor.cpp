@@ -1,11 +1,11 @@
 #include "Corridor.h"
+
 #include <cmath>
 #include <limits>
 
-Corridor::Corridor() : wallColor(sf::Color::White), wallThickness(1.0f) {}
+Corridor::Corridor() = default;
 
-Corridor::Corridor(const std::vector<Vector2> &outline_, const sf::Color &wallColor_, float wallThickness_)
-    : wallColor(wallColor_), wallThickness(wallThickness_)
+Corridor::Corridor(const std::vector<Vector2> &outline_)
 {
     setOutline(outline_);
 }
@@ -82,54 +82,57 @@ bool Corridor::contains(const Vector2 &position, float margin) const
     return minDistanceSquared >= margin * margin;
 }
 
-void Corridor::resolveCollision(Particle &particle, const Vector2 &previousPosition, float margin) const
+namespace
 {
-    if (contains(particle.position, margin))
+    void resolveCollisionAgainstBoundary(const Corridor &corridor, Particle &particle, const Vector2 &previousPosition, float margin, bool shouldStayInside)
     {
-        return;
+        const bool positionValid = shouldStayInside ? corridor.contains(particle.position, margin)
+                                                    : !corridor.contains(particle.position, margin);
+        if (positionValid)
+        {
+            return;
+        }
+
+        Vector2 xOnlyPosition(particle.position.x, previousPosition.y);
+        Vector2 yOnlyPosition(previousPosition.x, particle.position.y);
+
+        bool xMovementValid = shouldStayInside ? corridor.contains(xOnlyPosition, margin)
+                                               : !corridor.contains(xOnlyPosition, margin);
+        bool yMovementValid = shouldStayInside ? corridor.contains(yOnlyPosition, margin)
+                                               : !corridor.contains(yOnlyPosition, margin);
+
+        if (!xMovementValid)
+        {
+            particle.position.x = previousPosition.x;
+            particle.velocity.x = -particle.velocity.x;
+        }
+
+        if (!yMovementValid)
+        {
+            particle.position.y = previousPosition.y;
+            particle.velocity.y = -particle.velocity.y;
+        }
+
+        if (xMovementValid && yMovementValid)
+        {
+            particle.position = previousPosition;
+            particle.velocity.x = -particle.velocity.x;
+            particle.velocity.y = -particle.velocity.y;
+        }
     }
+} // namespace
 
-    Vector2 xOnlyPosition(particle.position.x, previousPosition.y);
-    Vector2 yOnlyPosition(previousPosition.x, particle.position.y);
-
-    bool xMovementValid = contains(xOnlyPosition, margin);
-    bool yMovementValid = contains(yOnlyPosition, margin);
-
-    if (!xMovementValid)
-    {
-        particle.position.x = previousPosition.x;
-        particle.velocity.x = -particle.velocity.x;
-    }
-
-    if (!yMovementValid)
-    {
-        particle.position.y = previousPosition.y;
-        particle.velocity.y = -particle.velocity.y;
-    }
-
-    if (xMovementValid && yMovementValid)
-    {
-        particle.position = previousPosition;
-        particle.velocity.x = -particle.velocity.x;
-        particle.velocity.y = -particle.velocity.y;
-    }
-
-    particle.shape.setPosition({particle.position.x, particle.position.y});
+void Corridor::resolveInnerCollision(Particle &particle, const Vector2 &previousPosition, float margin) const
+{
+    resolveCollisionAgainstBoundary(*this, particle, previousPosition, margin, true);
 }
 
-void Corridor::draw(sf::RenderWindow &window) const
+void Corridor::resolveOuterCollision(Particle &particle, const Vector2 &previousPosition, float margin) const
 {
-    for (const auto &segment : wallSegments)
-    {
-        Vector2 delta = segment.end - segment.start;
-        float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
-        float angle = std::atan2(delta.y, delta.x) * 180.0f / 3.14159265f;
+    resolveCollisionAgainstBoundary(*this, particle, previousPosition, margin, false);
+}
 
-        sf::RectangleShape wall({length, wallThickness});
-        wall.setOrigin({0.0f, wallThickness * 0.5f});
-        wall.setPosition({segment.start.x, segment.start.y});
-        wall.setRotation(sf::degrees(angle));
-        wall.setFillColor(wallColor);
-        window.draw(wall);
-    }
+const std::vector<Vector2> &Corridor::getOutline() const
+{
+    return outline;
 }

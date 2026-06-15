@@ -1,0 +1,5 @@
+/home/lin/urfu_proj_cpp/build-release/CMakeFiles/simulation_core.dir
+/home/lin/urfu_proj_cpp/build-release/CMakeFiles/simulation_gui.dir
+/home/lin/urfu_proj_cpp/build-release/CMakeFiles/simulation.dir
+/home/lin/urfu_proj_cpp/build-release/CMakeFiles/edit_cache.dir
+/home/lin/urfu_proj_cpp/build-release/CMakeFiles/rebuild_cache.dir

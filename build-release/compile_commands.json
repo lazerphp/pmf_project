@@ -1,0 +1,68 @@
+[
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_core.dir/src/Particle.cpp.o -c /home/lin/urfu_proj_cpp/src/Particle.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/Particle.cpp",
+  "output": "CMakeFiles/simulation_core.dir/src/Particle.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_core.dir/src/PhysicsForces.cpp.o -c /home/lin/urfu_proj_cpp/src/PhysicsForces.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/PhysicsForces.cpp",
+  "output": "CMakeFiles/simulation_core.dir/src/PhysicsForces.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_core.dir/src/Corridor.cpp.o -c /home/lin/urfu_proj_cpp/src/Corridor.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/Corridor.cpp",
+  "output": "CMakeFiles/simulation_core.dir/src/Corridor.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_core.dir/src/HeadlessSimulation.cpp.o -c /home/lin/urfu_proj_cpp/src/HeadlessSimulation.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/HeadlessSimulation.cpp",
+  "output": "CMakeFiles/simulation_core.dir/src/HeadlessSimulation.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_core.dir/src/JsonRunIO.cpp.o -c /home/lin/urfu_proj_cpp/src/JsonRunIO.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/JsonRunIO.cpp",
+  "output": "CMakeFiles/simulation_core.dir/src/JsonRunIO.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_core.dir/src/SimulationCore.cpp.o -c /home/lin/urfu_proj_cpp/src/SimulationCore.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/SimulationCore.cpp",
+  "output": "CMakeFiles/simulation_core.dir/src/SimulationCore.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_core.dir/src/SimulationStats.cpp.o -c /home/lin/urfu_proj_cpp/src/SimulationStats.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/SimulationStats.cpp",
+  "output": "CMakeFiles/simulation_core.dir/src/SimulationStats.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_core.dir/src/Zone.cpp.o -c /home/lin/urfu_proj_cpp/src/Zone.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/Zone.cpp",
+  "output": "CMakeFiles/simulation_core.dir/src/Zone.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -isystem /mnt/c/msys64/ucrt64/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_gui.dir/src/CameraController.cpp.o -c /home/lin/urfu_proj_cpp/src/CameraController.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/CameraController.cpp",
+  "output": "CMakeFiles/simulation_gui.dir/src/CameraController.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++  -I/home/lin/urfu_proj_cpp/include -isystem /mnt/c/msys64/ucrt64/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation_gui.dir/src/Simulation.cpp.o -c /home/lin/urfu_proj_cpp/src/Simulation.cpp",
+  "file": "/home/lin/urfu_proj_cpp/src/Simulation.cpp",
+  "output": "CMakeFiles/simulation_gui.dir/src/Simulation.cpp.o"
+},
+{
+  "directory": "/home/lin/urfu_proj_cpp/build-release",
+  "command": "/usr/bin/c++ -DSIMULATION_WITH_GUI=1 -I/home/lin/urfu_proj_cpp/include -isystem /mnt/c/msys64/ucrt64/include -O3 -DNDEBUG -std=c++17 -o CMakeFiles/simulation.dir/main.cpp.o -c /home/lin/urfu_proj_cpp/main.cpp",
+  "file": "/home/lin/urfu_proj_cpp/main.cpp",
+  "output": "CMakeFiles/simulation.dir/main.cpp.o"
+}
+]

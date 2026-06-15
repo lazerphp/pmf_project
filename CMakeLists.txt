@@ -8,33 +8,36 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System)
 
-# Собираем список исходных файлов
-set(SOURCES
-    main.cpp
-    src/CameraController.cpp
+set(CORE_SOURCES
     src/Particle.cpp
+    src/PhysicsForces.cpp
     src/Corridor.cpp
-    src/Simulation.cpp
+    src/HeadlessSimulation.cpp
+    src/JsonRunIO.cpp
+    src/SimulationCore.cpp
+    src/SimulationStats.cpp
     src/Zone.cpp
-    # Vector2.cpp не нужен, если реализация в заголовке, 
-    # но если вынесли туда - добавьте сюда
 )
 
-# add_executable(simulation ${SOURCES})
+add_library(simulation_core STATIC ${CORE_SOURCES})
+target_include_directories(simulation_core PUBLIC include)
 
-if(WIN32)
-    # Убираем отдельное консольное окно для графического приложения на Windows.
-    add_executable(simulation WIN32 ${SOURCES})
-else()
-    add_executable(simulation ${SOURCES})
-endif()
+add_library(simulation_gui STATIC
+    src/CameraController.cpp
+    src/Simulation.cpp
+)
+target_include_directories(simulation_gui PRIVATE include)
+target_link_libraries(simulation_gui
+    PUBLIC simulation_core
+    PUBLIC SFML::Graphics SFML::Window SFML::System
+)
 
-
+add_executable(simulation main.cpp)
 target_include_directories(simulation PRIVATE include)
-
-target_link_libraries(simulation PRIVATE SFML::Graphics SFML::Window SFML::System)
+target_link_libraries(simulation PRIVATE simulation_gui)
+target_compile_definitions(simulation PRIVATE SIMULATION_WITH_GUI=1)
 
 if(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
-    target_link_libraries(simulation PRIVATE Threads::Threads)
+    target_link_libraries(simulation_core PUBLIC Threads::Threads)
 endif()

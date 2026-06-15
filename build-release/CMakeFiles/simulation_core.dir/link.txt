@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsimulation_core.a CMakeFiles/simulation_core.dir/src/Particle.cpp.o CMakeFiles/simulation_core.dir/src/PhysicsForces.cpp.o CMakeFiles/simulation_core.dir/src/Corridor.cpp.o CMakeFiles/simulation_core.dir/src/HeadlessSimulation.cpp.o CMakeFiles/simulation_core.dir/src/JsonRunIO.cpp.o CMakeFiles/simulation_core.dir/src/SimulationCore.cpp.o CMakeFiles/simulation_core.dir/src/SimulationStats.cpp.o CMakeFiles/simulation_core.dir/src/Zone.cpp.o
+/usr/bin/ranlib libsimulation_core.a

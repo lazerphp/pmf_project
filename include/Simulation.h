@@ -2,42 +2,45 @@
 #define SIMULATION_H
 
 #include <SFML/Graphics.hpp>
-#include <vector>
-#include <random>
-#include "Config.h"
-#include "Particle.h"
-#include "CameraController.h"
-#include "Corridor.h"
-#include "Zone.h"
 
-// Возвращает силу внешнего поля как F = -grad(U).
-Vector2 getPotentialForce(float x, float y, const Config::Field::Params &fieldParams);
+#include "CameraController.h"
+#include "RunConfig.h"
+#include "SimulationCore.h"
+#include "VisualConfig.h"
 
 class Simulation
 {
 private:
-    std::vector<Particle> particles;
-    Corridor corridor;
-    SpawnZone spawnZone;
-    TargetZone targetZone;
-    Config::Field::Params fieldParams;
+    SimulationCore core;
     sf::RenderWindow window;
     CameraController cameraController;
-    float width, height;
+    sf::CircleShape particleShapeTemplate;
+    sf::RectangleShape zoneShapeTemplate;
+    sf::Font hudFont;
+    int guiStepsPerFrame;
+    bool paused;
+    bool hudFontLoaded;
 
-    // Генераторы случайных чисел
-    std::mt19937 rng;
-    std::uniform_real_distribution<float> distPos;
-    std::uniform_real_distribution<float> distVel;
-
-    Vector2 computePairForce(const Particle &a, const Particle &b) const;
-    void applyExternalForces();
-    void applyInteractionForces();
-    void accumulateForces();
-    void initParticles();
+    void processEvents();
+    void handleEvent(const sf::Event &event);
+    void handleKeyPressed(const sf::Event::KeyPressed &keyPressed);
+    void handleMouseWheelScrolled(const sf::Event::MouseWheelScrolled &mouseWheelScrolled);
+    void drawWorldGuides();
+    void drawZone(const Zone &zone, const sf::Color &color);
+    void drawBoundary(const Corridor &boundary, const sf::Color &color);
+    void drawFieldSources();
+    void drawFieldSource(const Config::Field::Source &source, float maxAbsStrength);
+    void drawTargetCounter();
+    void slowDown();
+    void speedUp();
+    void togglePause();
+    void syncPauseStateWithRunLimits();
+    void updateWindowTitle();
+    void update();
+    void render();
 
 public:
-    Simulation();
+    explicit Simulation(const RunConfig &runConfig);
     void run();
 };
 

@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/simulation.dir/main.cpp.o -o simulation  -Wl,-rpath,/mnt/c/msys64/ucrt64/bin libsimulation_gui.a libsimulation_core.a /mnt/c/msys64/ucrt64/bin/libsfml-graphics-3.dll /mnt/c/msys64/ucrt64/bin/libsfml-window-3.dll /mnt/c/msys64/ucrt64/bin/libsfml-system-3.dll 

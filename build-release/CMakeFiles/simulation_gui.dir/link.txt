@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsimulation_gui.a CMakeFiles/simulation_gui.dir/src/CameraController.cpp.o CMakeFiles/simulation_gui.dir/src/Simulation.cpp.o
+/usr/bin/ranlib libsimulation_gui.a
