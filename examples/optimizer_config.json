@@ -9,7 +9,7 @@
   "runConfigPath": "run_config.json",
   "runConfig": {
     "particleCount": 20,
-    "maxSimulationTime": 60.0
+    "maxSimulationTime": 120.0
   },
   "optimizationParameters": [
     {

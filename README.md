@@ -5,43 +5,43 @@
 Проект моделирует движение частиц внутри S-образного коридора.
 Частицы:
 
-- взаимодействуют друг с другом через потенциал Леннарда-Джонса
-- движутся под действием внешнего поля
+- взаимодействуют друг с другом через потенциал Леннарда-Джонса (см. [potentials.md](file:///home/lin/urfu_proj_cpp/docs/potentials.md))
+- движутся под действием внешнего потенциального поля
 - стартуют из `SpawnZone`
 - должны попасть в `TargetZone`
 
 Практическая цель проекта:
 
-- уметь запускать симуляцию интерактивно в окне SFML
-- уметь запускать ту же физику в `headless`-режиме
-- подбирать параметры внешнего поля автоматически из Python
+- запускать симуляцию интерактивно в окне SFML (GUI)
+- запускать физику в `headless`-режиме
+- подбирать параметры внешнего поля автоматически из Python-оптимизатора
 
-Сейчас архитектура уже разделена на физическое ядро и GUI-оболочку, поэтому один и тот же набор параметров можно:
+Архитектура разделена на физическое ядро и GUI-оболочку, поэтому один и тот же набор параметров можно:
 
-- прогонять автоматически без окна
-- затем открыть визуально и посмотреть поведение частиц
+- прогонять автоматически без окна (в фоновом режиме)
+- визуализировать и детально анализировать поведение частиц в реальном времени
 
 ## Текущее состояние
 
-Уже есть:
+Реализованы следующие компоненты:
 
-- физическое ядро `SimulationCore`
-- GUI-оболочка `Simulation`
-- headless-режим `./simulation --headless`
-- `RunConfig` для runtime-параметров
-- загрузка параметров из JSON
-- JSON-результат headless-прогона
-- базовая метрика `quality` для сравнения прогонов
-- отдельный JSON-конфиг для оптимизации
-- Python-скрипт для численного градиентного спуска
+- Физическое ядро [SimulationCore](file:///home/lin/urfu_proj_cpp/include/SimulationCore.h)
+- GUI-визуализатор [Simulation](file:///home/lin/urfu_proj_cpp/include/Simulation.h) на базе SFML 3
+- Headless-режим (запуск с флагом `--headless`)
+- Конфигурация параметров прогона через структуру [RunConfig](file:///home/lin/urfu_proj_cpp/include/RunConfig.h)
+- Поддержка частичной/полной загрузки параметров и сцены из JSON
+- Сохранение результатов headless-прогона в JSON-формате
+- Метрика `quality` для оценки и сравнения эффективности прогонов
+- Выделенный конфигурационный файл оптимизации [optimizer_config.json](file:///home/lin/urfu_proj_cpp/examples/optimizer_config.json)
+- Скрипт численного градиентного спуска [gradient_descent.py](file:///home/lin/urfu_proj_cpp/scripts/gradient_descent.py)
+- Скрипт визуализации результатов оптимизации [plot_optimization.py](file:///home/lin/urfu_proj_cpp/scripts/plot_optimization.py)
 
-Основной сценарий работы сейчас такой:
+Основной сценарий работы:
 
-1. Собрать один бинарник `simulation`
-2. Запускать его либо в GUI, либо в `--headless`
-3. Запускать Python-оптимизатор, который многократно дергает `simulation --headless`
-4. Сохранять лучший `RunConfig`
-5. При необходимости запускать GUI с тем же конфигом
+1. Собрать исполняемый файл `simulation`.
+2. Запустить оптимизатор на Python, который многократно выполняет `./build/simulation --headless` для оценки градиента.
+3. Оптимизатор сохраняет лучший найденный [RunConfig](file:///home/lin/urfu_proj_cpp/include/RunConfig.h).
+4. Проверить результаты визуально в GUI с помощью лучшей конфигурации.
 
 ## Технологии
 
@@ -106,21 +106,21 @@
 
 ## Архитектура
 
-### Ядро
+### Ядро (Core)
 
-- `SimulationCore` содержит частицы, коридор, препятствия, зоны, статистику и физический шаг
-- `Particle`, `Corridor`, `Zone`, `PhysicsForces`, `SimulationStats` не зависят от SFML
+- [SimulationCore](file:///home/lin/urfu_proj_cpp/include/SimulationCore.h) содержит частицы, геометрию коридора, внутренние препятствия, зоны, статистику и физический шаг.
+- [Particle](file:///home/lin/urfu_proj_cpp/include/Particle.h), [Corridor](file:///home/lin/urfu_proj_cpp/include/Corridor.h), [Zone](file:///home/lin/urfu_proj_cpp/include/Zone.h), [PhysicsForces](file:///home/lin/urfu_proj_cpp/include/PhysicsForces.h), [SimulationStats](file:///home/lin/urfu_proj_cpp/include/SimulationStats.h) полностью отделены от графической библиотеки SFML.
 
-### GUI
+### GUI-визуализация
 
-- `Simulation` отвечает за окно, события, камеру и отрисовку
-- `CameraController` и `VisualConfig` относятся только к GUI-слою
+- [Simulation](file:///home/lin/urfu_proj_cpp/include/Simulation.h) отвечает за создание окна, обработку событий, камеру и отрисовку.
+- [CameraController](file:///home/lin/urfu_proj_cpp/include/CameraController.h) и [VisualConfig](file:///home/lin/urfu_proj_cpp/include/VisualConfig.h) относятся исключительно к GUI-слою.
 
-### Оптимизатор
+### Оптимизация и Ввод/Вывод (I/O)
 
-- `RunConfig` описывает параметры одного прогона
-- `JsonRunIO` загружает конфиги из JSON и сериализует результат
-- `HeadlessSimulationRunner` выполняет прогон без окна, возвращает метрики
+- [RunConfig](file:///home/lin/urfu_proj_cpp/include/RunConfig.h) описывает runtime-параметры одного прогона.
+- [JsonRunIO](file:///home/lin/urfu_proj_cpp/src/JsonRunIO.cpp) загружает конфигурационные JSON-файлы и сериализует результаты headless-прогонов.
+- `HeadlessSimulationRunner` выполняет симуляцию в фоновом режиме до завершения или тайм-аута и возвращает метрики.
 
 ## Быстрый старт
 
@@ -139,16 +139,10 @@ make optimize
 make plot
 
 # 5. Запустить симуляцию с лучшими параметрами в GUI
-make gui
+make gui-best
 ```
 
-Или всё сразу после сборки:
-
-```bash
-make all   # optimize → plot → gui
-```
-
-Список всех целей:
+Список всех целей Makefile:
 
 ```bash
 make help
@@ -158,10 +152,10 @@ make help
 
 ### Требования
 
-- C++17-компилятор
-- CMake
-- SFML 3
-- Python 3 + [uv](https://github.com/astral-sh/uv)
+- C++17-совместимый компилятор (GCC, Clang, MSVC)
+- CMake 3.16+
+- Библиотека **SFML 3**
+- Python 3 + пакетный менеджер [uv](https://github.com/astral-sh/uv)
 
 ### Linux / WSL
 
@@ -170,7 +164,7 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Если CMake не находит SFML автоматически:
+If CMake не находит SFML автоматически:
 
 ```bash
 cmake -S . -B build -DSFML_DIR=/path/to/SFML/lib/cmake/SFML
@@ -179,166 +173,77 @@ cmake --build build
 
 ### Windows / Visual Studio
 
-1. Установить SFML 3 под нужный MSVC
-2. Открыть корень проекта в Visual Studio как CMake-проект
-3. При необходимости передать:
+1. Установите SFML 3 под соответствующий MSVC.
+2. Откройте корень проекта в Visual Studio как CMake-проект.
+3. При необходимости укажите путь:
+   ```json
+   "cmakeCommandArgs": "-DSFML_DIR=C:/Libs/SFML/lib/cmake/SFML"
+   ```
 
-```json
-"cmakeCommandArgs": "-DSFML_DIR=C:/Libs/SFML/lib/cmake/SFML"
-```
+## Запуск и Управление
 
-## Запуск
-
-### GUI
+### GUI-режим
 
 ```bash
 ./build/simulation
 ```
 
-Без `--input-json` бинарник берет базовую сцену и поле из `examples/run_config.json`.
+По умолчанию симуляция считывает параметры и геометрию сцены из [run_config.json](file:///home/lin/urfu_proj_cpp/examples/run_config.json).
 
-Во время GUI-прогона:
+Управление в окне GUI:
 
-- `Left` замедляет симуляцию
-- `Right` ускоряет симуляцию
-- `P` ставит GUI-прогон на паузу и снимает с паузы
-- `Space` перезапускает симуляцию
+- `Left` — замедлить симуляцию (уменьшить количество шагов физики на кадр)
+- `Right` — ускорить симуляцию (увеличить количество шагов физики на кадр)
+- `P` — поставить симуляцию на паузу / снять с паузы
+- `Space` — перезапустить симуляцию (сбросить состояние)
+- `+` / `=` — приблизить камеру (zoom in)
+- `-` / `Subtract` / `Hyphen` — отдалить камеру (zoom out)
+- `Num0` / `0` — сбросить положение и масштаб камеры к стандартным
+- Перетаскивание с зажатой **левой кнопкой мыши (LMB)** — перемещение камеры по сцене (pan)
+- Прокрутка **колесика мыши** — приближение и отдаление камеры относительно текущей позиции курсора
 
-Текущая GUI-скорость показывается в заголовке окна как число `dt`-шагов на кадр.
+Текущая скорость симуляции отображается в заголовке окна как число шагов физики `dt` на один кадр отрисовки.
 
-### GUI с JSON-конфигом
+### Запуск с JSON-конфигом
 
 ```bash
 ./build/simulation --input-json examples/run_config.json
 ```
 
-## Runtime-параметры
+## Runtime-параметры CLI
 
-Бинарник поддерживает:
+Бинарник поддерживает следующие аргументы командной строки:
 
-- `--input-json <path>`
-- `--output-json <path>`
-- `--headless`
-- `--max-time <float>`
-- `--particle-count <int>`
-- `--dt <float>`
-- `--physics-steps-per-frame <int>` — только для GUI, headless его игнорирует
-- `--seed <uint>`
+- `--input-json <path>` — загрузить конфигурацию симуляции из JSON
+- `--output-json <path>` — записать результаты headless-прогона в JSON-файл
+- `--headless` — запустить в фоновом режиме без открытия графического окна
+- `--max-time <float>` — максимальное время моделирования в секундах (только для `--headless`)
+- `--particle-count <int>` — переопределить количество частиц
+- `--dt <float>` — шаг интегрирования физики по времени
+- `--physics-steps-per-frame <int>` — шагов физики на кадр (только для GUI)
+- `--seed <uint>` — зерно генератора случайных чисел
 
-Для `sources` основная настройка поля задается через JSON-конфиг.
-Геометрия коридора, внутренних препятствий, стартовой зоны и целевой зоны тоже задается только через JSON.
+## Формат JSON-конфигурации
 
-## Формат JSON
+Пример полной конфигурации находится в [run_config.json](file:///home/lin/urfu_proj_cpp/examples/run_config.json).
 
-Пример лежит в [examples/run_config.json](/home/lin/urfu_proj_cpp/examples/run_config.json:1).
+Структура поддерживает частичную инициализацию: все неуказанные поля заполняются значениями по умолчанию.
 
-Общая форма:
+Для источников поля (`fieldModel.sources`) поддерживаются:
+- Точечные источники: задается параметр `center`
+- Линейные источники: задаются параметры `segment.start` и `segment.end`
+- Масштаб влияния поля задается через параметр `sigma`
 
-```json
-{
-  "apiVersion": 1,
-  "runConfig": {
-    "particleCount": 50,
-    "physicsStepsPerFrame": 5,
-    "dt": 0.001,
-    "maxSimulationTime": 10.0,
-    "seed": 42,
-    "fieldModel": {
-      "sources": {
-        "sources": [
-          {
-            "segment": {
-              "start": { "x": 560.0, "y": 100.0 },
-              "end": { "x": 560.0, "y": 160.0 }
-            },
-            "strength": -1800.0,
-            "sigma": 50.0
-          },
-          {
-            "segment": {
-              "start": { "x": 500.0, "y": 360.0 },
-              "end": { "x": 560.0, "y": 360.0 }
-            },
-            "strength": -2500.0,
-            "sigma": 45.0
-          },
-          {
-            "segment": {
-              "start": { "x": 300.0, "y": 300.0 },
-              "end": { "x": 300.0, "y": 360.0 }
-            },
-            "strength": -3200.0,
-            "sigma": 45.0
-          },
-          {
-            "center": { "x": 340.0, "y": 500.0 },
-            "strength": -4200.0,
-            "sigma": 50.0
-          }
-        ]
-      }
-    },
-    "scene": {
-      "corridor": {
-        "outline": [
-          { "x": 100.0, "y": 40.0 },
-          { "x": 180.0, "y": 40.0 },
-          { "x": 180.0, "y": 100.0 }
-        ]
-      },
-      "obstacles": [
-        {
-          "outline": [
-            { "x": 260.0, "y": 180.0 },
-            { "x": 300.0, "y": 180.0 },
-            { "x": 300.0, "y": 220.0 },
-            { "x": 260.0, "y": 220.0 }
-          ]
-        }
-      ],
-      "spawnZone": {
-        "x": 100.0,
-        "y": 40.0,
-        "width": 80.0,
-        "height": 180.0
-      },
-      "targetZone": {
-        "x": 240.0,
-        "y": 460.0,
-        "width": 180.0,
-        "height": 180.0
-      }
-    },
-    "quality": {
-      "mode": "t80_or_penalized_missing_fraction",
-      "penaltyWeight": 1.0
-    }
-  }
-}
-```
+### Как задавать стены и зоны
 
-JSON может быть частичным:
+Стены сцены описываются в секции `scene`:
 
-- неуказанные поля берутся из `examples/run_config.json`
-- это удобно для Python-поиска и ручных экспериментов
+- `scene.corridor.outline` — внешняя граница допустимой области движения (замкнутый контур)
+- `scene.obstacles` — массив независимых внутренних препятствий (замкнутые контуры)
+- Вершины контуров соединяются последовательно, последняя автоматически замыкается с первой.
+- `scene.spawnZone` и `scene.targetZone` — прямоугольники спавна и цели
 
-Для источников поля можно задавать либо точку, либо отрезок:
-
-- если указан `center`, получится обычный точечный источник
-- если указан `segment.start` и `segment.end`, получится линейный источник вдоль конечного отрезка
-- `sigma` по-прежнему задает поперечную ширину влияния поля
-
-## Как задавать стены
-
-Стены сцены описываются в секции `scene`.
-
-- `scene.corridor.outline` задает внешнюю границу допустимой области движения.
-- `scene.obstacles` задает независимые внутренние препятствия.
-- Каждый `outline` задается списком вершин многоугольника.
-- Последняя вершина автоматически соединяется с первой, то есть и коридор, и препятствия всегда трактуются как замкнутые контуры.
-- Если внутренних препятствий нет, указывай пустой массив: `"obstacles": []`.
-
-Пример:
+Пример фрагмента JSON:
 
 ```json
 "scene": {
@@ -365,357 +270,127 @@ JSON может быть частичным:
 }
 ```
 
-Смысл такой:
-
-- частица должна оставаться внутри `corridor`
-- частица не должна попадать внутрь ни одного объекта из `obstacles`
-
-## Конфиг для оптимизации
-
-Чтобы не дублировать геометрию и физику в двух местах, `examples/run_config.json` считается каноническим конфигом симуляции.
-`examples/optimizer_config.json` хранит только настройки оптимизации и ссылается на базовый run config.
-
-То есть:
-
-- вся сцена, поле, `quality` и runtime-параметры живут в `run_config.json`
-- optimizer хранит `runConfigPath` и, при необходимости, точечные overrides
-- список `optimizationParameters` остается рядом с настройками gradient descent
-
-Пример такого файла:
-
-- [examples/optimizer_config.json](/home/lin/urfu_proj_cpp/examples/optimizer_config.json:1)
-
-### Что лежит в optimizer config
-
-`optimizer`
-- настройки самого метода оптимизации
-- например `iterations`, `learningRate`, `finiteDifferenceStep`
-
-`runConfigPath`
-- путь к базовому конфигу симуляции
-- обычно это `run_config.json` рядом с optimizer config
-
-`runConfig`
-- необязательные overrides поверх базового run config
-- удобно, если для оптимизации нужен, например, другой `particleCount` или `maxSimulationTime`
-
-`optimizationParameters`
-- список параметров поля, которые разрешено менять
-- для каждого параметра хранятся `name`, `min`, `max`
-
 ## Текущая конфигурация оптимизации
 
-Ниже описано текущее рабочее состояние optimizer config в репозитории.
+Настройки оптимизатора задаются в файле [optimizer_config.json](file:///home/lin/urfu_proj_cpp/examples/optimizer_config.json).
 
 ### 1. Целевая функция `quality`
 
-Используем:
+Вычисляется следующим образом:
 
-- если `t80` достигнуто:
+- Если порог в 80% частиц достигнут (`t80` определено):
+  $$quality = t80$$
 
-```text
-quality = t80
-```
-
-- если `t80` не достигнуто:
-
-```text
-quality = maxSimulationTime + penaltyWeight * missingTargetFraction
-```
+- Если порог в 80% частиц не достигнут:
+  $$quality = maxSimulationTime + penaltyWeight \times missingTargetFraction$$
 
 где:
+- $missingTargetFraction = \frac{missingTargetHits}{targetThresholdCount}$ — доля недошедших до цели частиц от требуемого количества для достижения порога 80%.
+- $penaltyWeight = 1.0$ (задается в [run_config.json](file:///home/lin/urfu_proj_cpp/examples/run_config.json)).
 
-```text
-missingTargetFraction = missingTargetHits / targetThresholdCount
-```
+Чем меньше значение `quality`, тем эффективнее считается конфигурация поля.
 
-Сейчас в базовом `run_config.json`:
+### 2. Оптимизируемые параметры
 
-- `penaltyWeight = 1.0`
+В [optimizer_config.json](file:///home/lin/urfu_proj_cpp/examples/optimizer_config.json) оптимизируются параметры `strength` (сила) и `sigma` (радиус влияния) для четырех основных притягивающих источников:
 
-Сейчас поддерживается только один режим `quality`:
+- `fieldModel.sources.sources[0].strength` (диапазон: от -2200.0 до -1600.0)
+- `fieldModel.sources.sources[1].strength` (диапазон: от -3000.0 до -2400.0)
+- `fieldModel.sources.sources[2].strength` (диапазон: от -3800.0 до -3200.0)
+- `fieldModel.sources.sources[3].strength` (диапазон: от -4600.0 до -4000.0)
+- `fieldModel.sources.sources[0].sigma` (диапазон: от 35.0 до 55.0)
+- `fieldModel.sources.sources[1].sigma` (диапазон: от 30.0 до 50.0)
+- `fieldModel.sources.sources[2].sigma` (диапазон: от 30.0 до 50.0)
+- `fieldModel.sources.sources[3].sigma` (диапазон: от 35.0 до 55.0)
 
-- `t80_or_penalized_missing_fraction`
+Это 8-мерное пространство параметров, определяющее прохождение частиц через критические участки (повороты) S-образного коридора.
 
-И C++, и Python ожидают именно его.
+### 3. Значения `maxSimulationTime` и `particleCount` в overrides
 
-Почему именно так:
+В файле [optimizer_config.json](file:///home/lin/urfu_proj_cpp/examples/optimizer_config.json) переопределены параметры базовой симуляции:
 
-- это одно число, которое удобно минимизировать
-- любой успешный прогон автоматически лучше неуспешного
-- среди неуспешных лучше тот, где до цели дошло больше частиц
-- формула достаточно простая и подходит для ознакомительного gradient descent
+- `maxSimulationTime = 120.0`
+- `particleCount = 20`
 
-### 2. Какие параметры сейчас оптимизируются
+Снижение числа частиц с 50 до 20 ускоряет вычисление шага градиентного спуска, а увеличенный лимит в 120 секунд дает частицам достаточно времени для успешного прохождения коридора.
 
-Сейчас в [examples/optimizer_config.json](/home/lin/urfu_proj_cpp/examples/optimizer_config.json:1) оптимизируются параметры модели `sources`:
+### 4. Воспроизводимость
 
-- силы нескольких ключевых притягивающих центров вдоль траектории
-
-Имена параметров задаются как пути внутри JSON, например:
-
-- `fieldModel.sources.sources[2].strength`
-- `fieldModel.sources.sources[7].strength`
-
-Почему выбраны именно они:
-
-- они напрямую влияют на то, как частицы проходят повороты S-образного коридора
-- это естественная постановка для superposition-модели: геометрия центров фиксирована, а исследуются их интенсивности
-- размерность поиска остается умеренной, поэтому gradient descent еще можно отлаживать без слишком дорогих прогонов
-
-### 3. Значение `maxSimulationTime`
-
-Сейчас в overrides внутри optimizer config:
-
-- `maxSimulationTime = 15.0`
-
-Почему:
-
-- 10 секунд для текущих параметров часто недостаточно, чтобы увидеть полезную динамику
-- прогон остается информативным, но все еще не слишком дорогим
-- для batch-оптимизации важна предсказуемая стоимость одного запуска
-- при такой настройке удобно интерпретировать `quality`:
-  успешные прогоны обычно дают `quality < 15`,
-  неуспешные дают `quality >= 15`
-
-### 4. Seed для воспроизводимости
-
-Для MVP зафиксировано:
-
+Для стабильного расчета градиентов методом конечных разностей зафиксирован параметр seed в [run_config.json](file:///home/lin/urfu_proj_cpp/examples/run_config.json):
 - `seed = 42`
 
-Почему:
+## Что уже есть в метриках (Headless JSON)
 
-- численный gradient descent на шумной симуляции иначе ведет себя нестабильно
-- для демонстрации и сравнения результатов воспроизводимость важнее случайного разнообразия
+Фоновый запуск симуляции выдает структурированные данные о прогоне:
 
-### Почему это сделано так
+- `success` — флаг успешного завершения программы
+- `runConfig` — конфигурация прогона без GUI-only параметров
+- `metrics.reachedT80` — булев флаг достижения порога в 80%
+- `metrics.t80` — точное время достижения порога (float или null)
+- `metrics.uniqueTargetHits` — количество уникальных частиц, добравшихся до финиша
+- `metrics.targetThresholdCount` — целевой порог (80% от количества частиц)
+- `metrics.missingTargetHits` — число частиц, которых не хватило до порога
+- `metrics.missingTargetFraction` — относительная нехватка частиц
+- `metrics.quality` — вычисленное значение целевой функции качества
+- `stats.reachedTarget` — массив логических значений для каждой частицы (достигла ли цели)
+- `stats.firstHitTime` — время первого попадания для каждой частицы (число или null)
+- `runtime.simulatedTime` — промоделированное время в секундах
+- `runtime.stepsExecuted` — количество выполненных физических шагов
 
-Идея простая:
-
-- README объясняет решение и показывает пример
-- Python читает реальный JSON-конфиг
-- сами диапазоны и настройки не размазываются по нескольким местам
-
-То есть “официальные числа” живут не в README, а в конфиге.
-
-### Как это используется сейчас
-
-Скрипт [scripts/gradient_descent.py](/home/lin/urfu_proj_cpp/scripts/gradient_descent.py:1) делает именно это:
-
-1. Читает `examples/optimizer_config.json`
-2. Загружает базовый `runConfig` по `runConfigPath`
-3. Накладывает на него локальные overrides из `runConfig`, если они есть
-4. Меняет только параметры из `optimizationParameters`
-5. На каждом шаге запускает `./build/simulation --headless --input-json ...`
-6. Считает `quality`
-7. Оценивает градиент по конечным разностям
-8. Обновляет параметры
-9. Сохраняет лучший `RunConfig`
-10. Сохраняет артефакты в `runs/gradient_descent/`
-11. После этого лучший конфиг можно открыть в GUI:
-
-```bash
-./build/simulation --input-json runs/gradient_descent/best_run_config.json
-```
-
-## Что уже есть в метриках
-
-Headless JSON сейчас возвращает:
-
-- `success`
-- `runConfig` без GUI-only поля `physicsStepsPerFrame`
-- `t80`
-- `uniqueTargetHits`
-- `targetThresholdCount`
-- `missingTargetHits`
-- `missingTargetFraction`
-- `quality`
-- `stats.reachedTarget`
-- `stats.firstHitTime`
-- `runtime.simulatedTime`
-- `runtime.stepsExecuted`
-
-Смысл:
-
-- `t80` показывает время достижения порога 80%
-- `quality` используется для сравнения прогонов при поиске параметров
-- `stats` и `runtime` удобны для отладки, анализа и последующей визуализации
-
-Общая форма headless-ответа выглядит так:
+Пример структуры ответа:
 
 ```json
 {
   "apiVersion": 1,
   "success": true,
-  "runConfig": { "...": "..." },
-  "metrics": { "...": "..." },
+  "runConfig": {
+    "particleCount": 20,
+    "dt": 0.001,
+    "maxSimulationTime": 120.0,
+    "seed": 42
+  },
+  "metrics": {
+    "reachedT80": true,
+    "t80": 18.52,
+    "uniqueTargetHits": 17,
+    "targetThresholdCount": 16,
+    "missingTargetHits": 0,
+    "missingTargetFraction": 0.0,
+    "quality": 18.52
+  },
   "stats": {
-    "reachedTarget": [true, false],
-    "firstHitTime": [5.27, null]
+    "reachedTarget": [true, true, false],
+    "firstHitTime": [12.4, 18.52, null]
   },
   "runtime": {
-    "simulatedTime": 10.0,
-    "stepsExecuted": 10000
+    "simulatedTime": 120.0,
+    "stepsExecuted": 120000
   }
 }
 ```
 
-### Как сейчас считаются метрики
-
-Для каждой частицы симуляция хранит:
-
-- достигала ли она `TargetZone`
-- время первого достижения цели
-
-Из этого считаются:
-
-- `uniqueTargetHits`
-  Сколько уникальных частиц впервые достигли цели.
-
-- `targetThresholdCount`
-  Сколько частиц нужно для достижения порога 80%.
-  Сейчас это `ceil(0.8 * particleCount)`.
-
-- `t80`
-  Время, когда число уникальных попаданий впервые достигло `targetThresholdCount`.
-  Если порог не достигнут, `t80 = null`.
-
-- `missingTargetHits`
-  Сколько уникальных попаданий не хватает до порога 80%.
-
-- `missingTargetFraction`
-  Нормированная нехватка до порога:
-
-```text
-missingTargetFraction = missingTargetHits / targetThresholdCount
-```
-
-- `quality`
-  Текущее число для сравнения прогонов.
-
-### Как сейчас считается `quality`
-
-Сейчас реализована простая формула:
-
-- если `t80` достигнуто, то
-
-```text
-quality = t80
-```
-
-- если `t80` не достигнуто, то
-
-```text
-quality = maxSimulationTime + penaltyWeight * missingTargetFraction
-```
-
-Сейчас `penaltyWeight = 1.0`.
-
-Это значит:
-
-- успешные прогоны сравниваются по времени достижения 80%
-- неуспешные прогоны получают штраф выше `maxSimulationTime`
-- чем меньше `quality`, тем лучше прогон
-
-Важно: это уже рабочая формула, но она пока считается базовой и еще может быть уточнена.
-
-## Текущий MVP
-
-Текущий MVP проекта уже включает:
-
-- один бинарник `simulation` с GUI и `--headless` режимом
-- единое физическое ядро `SimulationCore`
-- загрузку `RunConfig` из JSON
-- headless JSON-результат с метриками
-- базовую `quality` для сравнения прогонов
-- единый optimizer config
-- Python-скрипт численного градиентного спуска
-- Python-скрипт визуализации результатов оптимизации
-- сохранение артефактов оптимизации
-- возможность открыть лучший найденный конфиг в GUI
-
-Практически это означает, что уже сейчас можно:
-
-1. Запустить оптимизацию из Python
-2. Получить `history.csv`, `best_run_config.json`, `best_result.json`, `summary.json`
-3. Открыть лучший конфиг в визуализации через SFML
-
-## Что еще может потребовать подстройки
-
-MVP рабочий, но исследовательская часть проекта, скорее всего, еще потребует итераций.
-
-На практике, возможно, придется дополнительно подбирать:
-
-- окончательную формулу `quality`
-- `penaltyWeight`
-- набор оптимизируемых параметров
-- диапазоны этих параметров
-- значение `maxSimulationTime`
-
-Также со временем может понадобиться:
-
-- дополнительная настройка физической модели
-- более устойчивый или более быстрый метод оптимизации, если plain gradient descent упрется в локальные минимумы или шум
-- более сильные оптимизаторы помимо текущего gradient descent
-
 ## Python-оптимизатор
 
-Сейчас базовая версия Python-оптимизатора уже есть:
+Скрипт [gradient_descent.py](file:///home/lin/urfu_proj_cpp/scripts/gradient_descent.py):
 
-- [scripts/gradient_descent.py](/home/lin/urfu_proj_cpp/scripts/gradient_descent.py:1)
+1. Загружает [optimizer_config.json](file:///home/lin/urfu_proj_cpp/examples/optimizer_config.json).
+2. Подгружает базовый [run_config.json](file:///home/lin/urfu_proj_cpp/examples/run_config.json).
+3. Применяет overrides (maxSimulationTime, particleCount).
+4. Оценивает градиент quality по 8 настраиваемым параметрам.
+5. Делает шаг оптимизации, зажимая значения параметров в разрешенных границах.
+6. Экспортирует результаты в `runs/gradient_descent/`:
+   - `history.csv` — лог всех итераций (quality, status, значения параметров и градиентов)
+   - `best_run_config.json` — лучшая конфигурация для запуска в GUI
+   - `best_result.json` — подробный headless JSON-результат лучшего прогона
+   - `summary.json` — краткая сводка по оптимизации
 
-Она читает optimizer config, запускает headless-прогоны и сохраняет артефакты оптимизации.
+## Полезные ссылки на файлы
 
-### Что принимает `gradient_descent.py`
-
-- `--binary <path>`
-  Путь до бинарника `simulation`.
-  По умолчанию: `./build/simulation`
-
-- `--optimizer-config <path>`
-  Путь до optimizer config.
-  По умолчанию: `examples/optimizer_config.json`
-
-- `--output-dir <path>`
-  Папка, куда сохраняются результаты.
-  По умолчанию: `runs/gradient_descent`
-
-### Что выдает `gradient_descent.py`
-
-Скрипт сохраняет:
-
-- `history.csv`
-  История итераций оптимизации.
-  Для каждого шага там есть не только `quality`, но и текстовый `status`:
-  `reached_t80` или `penalized`.
-
-- `best_run_config.json`
-  Лучший найденный конфиг симуляции.
-
-- `best_result.json`
-  Полный JSON-результат лучшего headless-прогона.
-
-- `summary.json`
-  Короткая сводка по лучшему прогону и настройкам оптимизации.
-  Там тоже сохраняется текстовый `bestStatus`.
-
-### Пример запуска
-
-```bash
-python3 scripts/gradient_descent.py \
-  --binary ./build/simulation \
-  --optimizer-config examples/optimizer_config.json \
-  --output-dir runs/gradient_descent
-```
-
-## Полезные файлы
-
-- [main.cpp](/home/lin/urfu_proj_cpp/main.cpp:1) — CLI, выбор GUI/headless режима
-- [include/RunConfig.h](/home/lin/urfu_proj_cpp/include/RunConfig.h:1) — runtime-конфиг прогона
-- [include/SimulationCore.h](/home/lin/urfu_proj_cpp/include/SimulationCore.h:1) — физическое ядро
-- [include/SimulationStats.h](/home/lin/urfu_proj_cpp/include/SimulationStats.h:1) — статистика и `quality`
-- [src/JsonRunIO.cpp](/home/lin/urfu_proj_cpp/src/JsonRunIO.cpp:1) — JSON I/O
-- [examples/optimizer_config.json](/home/lin/urfu_proj_cpp/examples/optimizer_config.json:1) — настройки оптимизатора и ссылка на базовый run config
-- [scripts/gradient_descent.py](/home/lin/urfu_proj_cpp/scripts/gradient_descent.py:1) — Python-скрипт численного градиентного спуска
-- [docs/potentials.md](/home/lin/urfu_proj_cpp/docs/potentials.md:1) — формулы потенциалов
+- [main.cpp](file:///home/lin/urfu_proj_cpp/main.cpp) — точка входа, разбор аргументов CLI
+- [Config.h](file:///home/lin/urfu_proj_cpp/include/Config.h) — статические настройки (LJ, радиус, скорость)
+- [RunConfig.h](file:///home/lin/urfu_proj_cpp/include/RunConfig.h) — конфигурация симуляции
+- [SimulationCore.h](file:///home/lin/urfu_proj_cpp/include/SimulationCore.h) — физический движок
+- [SimulationStats.h](file:///home/lin/urfu_proj_cpp/include/SimulationStats.h) — вычисление t80 и quality
+- [JsonRunIO.cpp](file:///home/lin/urfu_proj_cpp/src/JsonRunIO.cpp) — загрузка/вывод JSON
+- [gradient_descent.py](file:///home/lin/urfu_proj_cpp/scripts/gradient_descent.py) — оптимизатор
+- [potentials.md](file:///home/lin/urfu_proj_cpp/docs/potentials.md) — физические формулы

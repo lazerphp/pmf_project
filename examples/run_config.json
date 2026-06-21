@@ -4,7 +4,7 @@
     "particleCount": 50,
     "physicsStepsPerFrame": 50,
     "dt": 0.001,
-    "maxSimulationTime": 60.0,
+    "maxSimulationTime": 120.0,
     "seed": 42,
     "fieldModel": {
       "sources": {

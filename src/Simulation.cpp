@@ -216,6 +216,33 @@ void appendLine(sf::VertexArray &lines,
     lines.append(sf::Vertex{start, color});
     lines.append(sf::Vertex{end, color});
 }
+
+void drawCappedSegment(sf::RenderTarget &target,
+                       const Vector2 &start,
+                       const Vector2 &end,
+                       float thickness,
+                       const sf::Color &color)
+{
+    const Vector2 delta = end - start;
+    const float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+    if (length == 0.0f)
+    {
+        return;
+    }
+
+    const Vector2 direction = delta * (1.0f / length);
+    const float halfThickness = thickness * 0.5f;
+    const Vector2 extendedStart = start - direction * halfThickness;
+    const float cappedLength = length + thickness;
+    const float angle = std::atan2(direction.y, direction.x) * 180.0f / PI;
+
+    sf::RectangleShape segment({cappedLength, thickness});
+    segment.setOrigin({0.0f, halfThickness});
+    segment.setPosition({extendedStart.x, extendedStart.y});
+    segment.setRotation(sf::degrees(angle));
+    segment.setFillColor(color);
+    target.draw(segment);
+}
 } // namespace
 
 Simulation::Simulation(const RunConfig &runConfig)
@@ -455,16 +482,7 @@ void Simulation::drawBoundary(const Corridor &boundary, const sf::Color &color)
     {
         const Vector2 &start = outline[i];
         const Vector2 &end = outline[(i + 1) % outline.size()];
-        Vector2 delta = end - start;
-        float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
-        float angle = std::atan2(delta.y, delta.x) * 180.0f / 3.14159265f;
-
-        sf::RectangleShape wall({length, VisualConfig::Visuals::WALL_THICKNESS});
-        wall.setOrigin({0.0f, VisualConfig::Visuals::WALL_THICKNESS * 0.5f});
-        wall.setPosition({start.x, start.y});
-        wall.setRotation(sf::degrees(angle));
-        wall.setFillColor(color);
-        window.draw(wall);
+        drawCappedSegment(window, start, end, VisualConfig::Visuals::WALL_THICKNESS, color);
     }
 }
 
@@ -525,7 +543,10 @@ void Simulation::drawTargetCounter()
     panel.setOutlineColor(withAlpha(VisualConfig::Visuals::TARGET_COLOR, 200));
 
     const sf::View worldView = window.getView();
-    window.setView(window.getDefaultView());
+    const sf::View hudView(sf::FloatRect(
+        {0.0f, 0.0f},
+        {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)}));
+    window.setView(hudView);
     window.draw(panel);
 
     text.setPosition(

@@ -63,6 +63,30 @@ def parameter_bounds_map(optimization_parameters):
     }
 
 
+def clamp_parameter_vector(parameter_values, optimization_parameters):
+    bounds_by_name = parameter_bounds_map(optimization_parameters)
+    clamped_values = {}
+    adjustments = []
+
+    for parameter_name, parameter_value in parameter_values.items():
+        lower_bound, upper_bound = bounds_by_name[parameter_name]
+        clamped_value = clamp(parameter_value, lower_bound, upper_bound)
+        clamped_values[parameter_name] = clamped_value
+
+        if not math.isclose(parameter_value, clamped_value, rel_tol=0.0, abs_tol=1e-12):
+            adjustments.append(
+                {
+                    "name": parameter_name,
+                    "original": parameter_value,
+                    "clamped": clamped_value,
+                    "min": lower_bound,
+                    "max": upper_bound,
+                }
+            )
+
+    return clamped_values, adjustments
+
+
 def normalize_parameter_path(base_run_config, parameter_name):
     if "." in parameter_name or "[" in parameter_name:
         return parameter_name
@@ -320,6 +344,21 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     parameter_values = current_parameter_vector(base_run_config, optimization_parameters)
+    initial_parameter_adjustments = []
+    if clamp_to_range:
+        parameter_values, initial_parameter_adjustments = clamp_parameter_vector(
+            parameter_values,
+            optimization_parameters,
+        )
+        if initial_parameter_adjustments:
+            print("Clamped initial parameter values to declared optimization ranges:")
+            for adjustment in initial_parameter_adjustments:
+                print(
+                    "  "
+                    f"{adjustment['name']}: "
+                    f"{adjustment['original']:.6f} -> {adjustment['clamped']:.6f} "
+                    f"(range [{adjustment['min']:.6f}, {adjustment['max']:.6f}])"
+                )
     best_evaluation = None
     history_rows = []
     total_evaluations = 0
@@ -410,6 +449,8 @@ def main():
         "bestRuntime": best_evaluation["result"]["runtime"],
         "bestFieldModel": best_evaluation["runConfig"].get("fieldModel"),
         "totalEvaluations": total_evaluations,
+        "initialParametersClamped": len(initial_parameter_adjustments),
+        "initialParameterAdjustments": initial_parameter_adjustments,
         "artifacts": {
             "historyCsv": str(history_path),
             "bestRunConfig": str(best_config_path),

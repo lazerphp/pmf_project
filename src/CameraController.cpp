@@ -21,30 +21,28 @@ void CameraController::updateViewport(const sf::RenderWindow &window)
 {
     unsigned int winWidth = window.getSize().x;
     unsigned int winHeight = window.getSize().y;
-    float windowRatio = static_cast<float>(winWidth) / static_cast<float>(winHeight);
-    float logicalRatio = logicalWidth / logicalHeight;
+    if (winWidth == 0 || winHeight == 0)
+    {
+        return;
+    }
 
-    sf::FloatRect viewport({0.0f, 0.0f}, {1.0f, 1.0f});
+    const float windowRatio = static_cast<float>(winWidth) / static_cast<float>(winHeight);
+    const float logicalRatio = logicalWidth / logicalHeight;
+
+    float adaptedWidth = logicalWidth;
+    float adaptedHeight = logicalHeight;
 
     if (windowRatio > logicalRatio)
     {
-        float newWidth = logicalRatio * winHeight;
-        viewport.position.x = (winWidth - newWidth) / 2.0f / winWidth;
-        viewport.position.y = 0.0f;
-        viewport.size.x = newWidth / winWidth;
-        viewport.size.y = 1.0f;
+        adaptedWidth = logicalHeight * windowRatio;
     }
     else
     {
-        float newHeight = winWidth / logicalRatio;
-        viewport.position.x = 0.0f;
-        viewport.position.y = (winHeight - newHeight) / 2.0f / winHeight;
-        viewport.size.x = 1.0f;
-        viewport.size.y = newHeight / winHeight;
+        adaptedHeight = logicalWidth / windowRatio;
     }
 
-    view.setSize({logicalWidth * zoomLevel, logicalHeight * zoomLevel});
-    view.setViewport(viewport);
+    view.setSize({adaptedWidth * zoomLevel, adaptedHeight * zoomLevel});
+    view.setViewport(sf::FloatRect({0.0f, 0.0f}, {1.0f, 1.0f}));
 }
 
 void CameraController::zoomAt(float factor, const sf::RenderWindow &window, const sf::Vector2i &pixel)
